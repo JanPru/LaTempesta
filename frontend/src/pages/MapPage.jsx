@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Map, { Source, Layer, Marker, Popup } from "react-map-gl/mapbox";
+import Map, { Source, Layer } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Papa from "papaparse";
-import "mapbox-gl/dist/mapbox-gl.css";
 
+// The MapPage component displays an interactive Mapbox map populated
+// with points derived from a CSV file. It also gracefully fits the
+// viewport and avoids horizontal overflow by ensuring all containers
+// expand to 100% of their parent width.
 const pointLayer = {
   id: "points",
   type: "circle",
@@ -18,6 +21,7 @@ export default function MapPage() {
   const [geojson, setGeojson] = useState(null);
   const [error, setError] = useState("");
 
+  // Memoise initial view state so it isn't recreated on every render.
   const initialViewState = useMemo(
     () => ({ longitude: 2.1734, latitude: 41.3851, zoom: 3 }),
     []
@@ -45,7 +49,7 @@ export default function MapPage() {
             const lon = Number(row.lon);
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-            // props = totes les columnes menys lat/lon (opcional)
+            // Extract all properties except lat and lon
             const { lat: _lat, lon: _lon, ...props } = row;
 
             return {
@@ -59,7 +63,7 @@ export default function MapPage() {
         const gj = { type: "FeatureCollection", features };
         setGeojson(gj);
 
-        // Fit bounds als punts
+        // Fit bounds to points on next tick to ensure mapRef exists
         setTimeout(() => {
           if (!features.length || !mapRef.current) return;
 
@@ -93,16 +97,24 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Mapa interactiu</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+    <div style={{ padding: "20px", width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
+      <h1 style={{ marginBottom: "12px", overflowWrap: "break-word" }}>Mapa interactiu</h1>
+      {error && <p style={{ color: "crimson", overflowWrap: "break-word" }}>{error}</p>}
 
-      <div style={{ height: "70vh", borderRadius: 12, overflow: "hidden" }}>
+      <div
+        style={{
+          height: "70vh",
+          borderRadius: 12,
+          overflow: "hidden",
+          width: "100%",
+        }}
+      >
         <Map
           ref={mapRef}
           initialViewState={initialViewState}
           mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
           mapStyle="mapbox://styles/mapbox/streets-v12"
+          style={{ width: "100%", height: "100%" }}
         >
           {geojson && (
             <Source id="points-src" type="geojson" data={geojson}>

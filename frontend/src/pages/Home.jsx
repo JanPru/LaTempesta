@@ -1,4 +1,3 @@
-// Home.jsx
 import { useEffect, useState } from "react";
 import StatBox from "../components/StatBox";
 import AnimatedNetwork from "../components/AnimatedNetwork";
@@ -8,46 +7,43 @@ export default function Home() {
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/api/stats")
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(setStats)
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div
+          className="grid md:grid-cols-2 gap-12 items-center"
+          style={{ position: "relative" }}
+        >
           <div>
-            <h1 style={styles.heroTitle}>
-              Libraries Boosting Connectivity
-            </h1>
+            <h1 style={styles.heroTitle}>Libraries Boosting Connectivity</h1>
             <p style={styles.heroText}>
-              Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor 
-              invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam 
-              et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est
+              Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
+              nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam
+              erat, sed diam voluptua. At vero eos et accusam et justo duo
+              dolores et ea rebum. Stet clita kasd gubergren, no sea takimata
+              sanctus est
             </p>
-            <a 
-              href="/map" 
-              style={styles.exploreButton}
-            >
+            <a href="/map" style={styles.exploreButton}>
               <span style={styles.exploreButtonText}>Explore LBC Map</span>
-              <img 
-                src="/img/Icon core-arrow-circle-right.png" 
+              <img
+                src="/img/Icon core-arrow-circle-right.png"
                 alt="Arrow"
                 style={styles.exploreButtonIcon}
               />
             </a>
           </div>
-          <div className="relative">
-            <AnimatedNetwork />
-          </div>
+          <AnimatedNetwork />
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="max-w-7xl mx-auto px-6 pt-32 pb-6">
+      {/* Statistics Section */}
+      <section className="max-w-7xl mx-auto px-6 py-2">
         <div className="grid md:grid-cols-3 gap-6">
           <StatBox
             number={stats ? Math.floor(stats.total_libraries / 1000) : "310"}
@@ -59,7 +55,7 @@ export default function Home() {
             imagePath="/img/Grupo 47.png"
             showGreenCircle={true}
           />
-          
+
           <StatBox
             number="90"
             unit="k"
@@ -69,7 +65,7 @@ export default function Home() {
             linkText="Explore types of connection"
             imagePath="/img/Grupo 49.png"
           />
-          
+
           <StatBox
             number="55"
             unit="%"
@@ -87,50 +83,53 @@ export default function Home() {
 
 const styles = {
   heroTitle: {
-    width: '700px',
-    height: '57px',
-    textAlign: 'left',
-    font: 'normal normal bold 42px/57px Noto Sans',
-    letterSpacing: '0px',
-    color: '#0F6641',
+    textAlign: "left",
+    font: "normal normal bold 42px/57px Noto Sans",
+    letterSpacing: "0px",
+    color: "#0F6641",
     opacity: 1,
-    marginBottom: '36px',
+    marginBottom: "36px",
+    width: "100%",
+    maxWidth: "700px",
+    height: "auto",
   },
   heroText: {
-    width: '712px',
-    height: '106px',
-    textAlign: 'left',
-    font: 'normal normal normal 16px/22px Noto Sans',
-    letterSpacing: '0px',
-    color: '#000000',
+    textAlign: "left",
+    font: "normal normal normal 16px/22px Noto Sans",
+    letterSpacing: "0px",
+    color: "#000000",
     opacity: 1,
-    marginBottom: '0px',
+    marginBottom: "16px",
+    width: "100%",
+    maxWidth: "712px",
+    height: "auto",
   },
   exploreButton: {
-    width: '197px',
-    height: '38px',
-    background: '#C90030',
+    background: "#C90030",
     opacity: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 14px',
-    textDecoration: 'none',
-    cursor: 'pointer',
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px 14px",
+    textDecoration: "none",
+    cursor: "pointer",
+    borderRadius: "4px",
+    width: "fit-content",
+    height: "auto",
   },
   exploreButtonText: {
-    width: '129px',
-    height: '22px',
-    textAlign: 'left',
-    font: 'normal normal medium 16px/16px Noto Sans',
-    letterSpacing: '0px',
-    color: '#FFFFFF',
+    textAlign: "left",
+    font: "normal normal medium 16px/16px Noto Sans",
+    letterSpacing: "0px",
+    color: "#FFFFFF",
     opacity: 1,
+    marginRight: "8px",
+    whiteSpace: "nowrap",
   },
   exploreButtonIcon: {
-    width: '16px',
-    height: '16px',
+    width: "16px",
+    height: "16px",
     opacity: 1,
-    filter: 'brightness(0) invert(1)', // Per fer la icona blanca
+    filter: "brightness(0) invert(1)",
   },
 };
