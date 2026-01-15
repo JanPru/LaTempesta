@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import animationData from "../assets/20322.json";
+import animationData from "../assets/Network.json";
 
 export default function AnimatedNetwork() {
   const containerRef = useRef(null);

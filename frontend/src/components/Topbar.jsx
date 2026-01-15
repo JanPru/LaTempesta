@@ -27,6 +27,36 @@ export default function Topbar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Bloquejar/desbloquejar scroll del body quan s'obre/tanca el menú
+  useEffect(() => {
+    if (menuOpen && isMobile) {
+      // Guardar la posició actual del scroll
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restaurar el scroll
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
+    // Cleanup al desmuntar
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen, isMobile]);
+
   // Toggle the mobile menu. Clicking the hamburger icon calls this.
   const toggleMenu = () => setMenuOpen((prev) => !prev);
 
@@ -35,13 +65,13 @@ export default function Topbar() {
   // arrow remains separate so the layout stays unchanged.
   const NavLinks = ({ mobile = false }) => (
     <>
-      <a href="#about" style={mobile ? styles.mobileNavLink : styles.navLink}>About</a>
-      <a href="#impact" style={mobile ? styles.mobileNavLink : styles.navLink}>Impact</a>
-      <a href="#resources" style={mobile ? styles.mobileNavLink : styles.navLink}>Resources</a>
-      <a href="#faqs" style={mobile ? styles.mobileNavLink : styles.navLink}>FAQs</a>
+      <a href="#about" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>About</a>
+      <a href="#impact" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>Impact</a>
+      <a href="#resources" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>Resources</a>
+      <a href="#faqs" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>FAQs</a>
       {/* The map link is styled separately to keep the brand colour. */}
       {mobile ? (
-        <a href="/map" style={{ ...styles.mobileNavLink, ...styles.navLinkRed, display: "flex", alignItems: "center", gap: "8px" }}>
+        <a href="/map" style={{ ...styles.mobileNavLink, ...styles.navLinkRed, display: "flex", alignItems: "center", gap: "8px" }} onClick={toggleMenu}>
           Explore LBC Map
           <img src="/img/Icon core-arrow-circle-right.png" alt="Arrow" style={styles.arrowIcon} />
         </a>
@@ -130,13 +160,13 @@ const styles = {
     top: 0,
     zIndex: 1000,
     width: "100%",
-    overflowX: "hidden", // prevent horizontal scroll
+    overflowX: "hidden",
   },
   container: {
     maxWidth: "1280px",
     width: "100%",
     margin: "0 auto",
-    padding: "20px 16px", // reduce fixed side padding for smaller screens
+    padding: "20px 16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -171,7 +201,7 @@ const styles = {
   nav: {
     display: "flex",
     alignItems: "center",
-    gap: "24px", // reduce gap for better fit on medium screens
+    gap: "24px",
     flexShrink: 0,
   },
   navLink: {
@@ -231,10 +261,10 @@ const styles = {
     borderRadius: "2px",
   },
   mobileNav: {
-    position: "absolute",
-    top: "100%",
+    position: "fixed",
+    top: "78px", // Ajusta segons l'alçada real del header
     left: 0,
-    width: "100%",
+    right: 0,
     backgroundColor: "#FFFFFF",
     display: "flex",
     flexDirection: "column",
@@ -242,6 +272,8 @@ const styles = {
     padding: "16px 24px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     zIndex: 999,
+    maxHeight: "calc(100vh - 78px)",
+    overflowY: "auto",
   },
   mobileNavLink: {
     textAlign: "left",
