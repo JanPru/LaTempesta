@@ -171,34 +171,40 @@ export default function MapPage() {
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
       />
-      {/* Button to reopen the menu when it is closed */}
+
+      {/* ✅ NOVA PESTANYA per re-obrir (igual que la de tancar) */}
       {!menuOpen && (
-        <button
+        <div
           onClick={() => setMenuOpen(true)}
           style={{
             position: "absolute",
-            top: "100px",
+            top: "50%",
+            transform: "translateY(-50%)",
             left: "14px",
             zIndex: 10,
-            width: "40px",
-            height: "40px",
+
+            width: "18px",
+            height: "55px",
             background: "#0F6641",
-            border: "none",
-            borderRadius: "4px",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
           }}
         >
           <img
-            src="/img/menuLateral/Icon ion-ios-arrow-drop-left.png"
+            src="/img/menuLateral/arrowDropDown.png"
             alt="Open menu"
-            style={{ width: "14px", height: "14px", transform: "rotate(180deg)" }}
+            style={{
+              width: "14px",
+              height: "14px",
+              filter: "invert(1)",
+              transform: "rotate(-90deg)", // obrir
+            }}
           />
-        </button>
+        </div>
       )}
+
       {/* Error banner */}
       {error && (
         <div
@@ -217,6 +223,7 @@ export default function MapPage() {
           {error}
         </div>
       )}
+
       {/* Map */}
       <Map
         ref={mapRef}

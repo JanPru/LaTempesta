@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 
 /*
- * InfoCard is used within the side menu to summarise a particular
- * statistic about the library dataset.  Each card accepts an icon,
- * title, subtitle, detail text and optionally displays an info
- * indicator and a segmented progress bar.  Icons must be passed in
- * via props so the parent component can decide which asset to use.
+ * InfoCard
+ * - Grey tooltip on hover for info icon
+ * - Tooltip: taller + narrower
+ * - Text wraps correctly (never overflows)
  */
 export default function InfoCard({
   icon,
@@ -17,6 +16,8 @@ export default function InfoCard({
   hasInfo,
   progressBar,
 }) {
+  const [showInfo, setShowInfo] = useState(false);
+
   return (
     <div style={{ position: "relative" }}>
       <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
@@ -24,26 +25,100 @@ export default function InfoCard({
         <img
           src={icon}
           alt=""
-          style={{ width: iconWidth, height: iconHeight, marginTop: "5px" }}
+          style={{
+            width: iconWidth,
+            height: iconHeight,
+            marginTop: "5px",
+            flexShrink: 0,
+          }}
         />
+
         <div style={{ flex: 1 }}>
+          {/* Title + info icon */}
           <div
             style={{
-              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
               font: "normal normal bold 20px/25px Noto Sans",
               color: "#4B4B4B",
               marginBottom: "5px",
+              whiteSpace: "nowrap",
             }}
           >
-            {title}
+            <span>{title}</span>
+
             {hasInfo && (
-              <img
-                src="/img/menuLateral/Icon ion-ios-information-circle.png"
-                alt="Info"
-                style={{ width: "11px", height: "11px", marginLeft: "8px" }}
-              />
+              <div
+                style={{ position: "relative", flexShrink: 0 }}
+                onMouseEnter={() => setShowInfo(true)}
+                onMouseLeave={() => setShowInfo(false)}
+              >
+                <img
+                  src="/img/menuLateral/Information.png"
+                  alt="Info"
+                  style={{
+                    width: "11px",
+                    height: "11px",
+                    cursor: "default",
+                    display: "block",
+                  }}
+                />
+
+                {/* TOOLTIP */}
+                {showInfo && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "-12px",
+                      left: "50%",
+                      transform: "translate(-50%, -100%)",
+
+                      background: "#E2E2E2",
+                      color: "#4B4B4B",
+
+                      // ✅ més prim, però adaptable
+                      width: "170px",
+                      maxWidth: "170px",
+                      boxSizing: "border-box",
+
+                      // ✅ més alt
+                      padding: "12px 10px",
+                      font: "normal normal normal 13px/18px Noto Sans",
+
+                      // ✅ CLAU: wrap correcte
+                      whiteSpace: "normal",
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
+
+                      boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+                      zIndex: 50,
+                      textAlign: "left",
+                    }}
+                  >
+                    {subtitle}
+
+                    {/* Triangle */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 0,
+                        height: 0,
+                        borderLeft: "6px solid transparent",
+                        borderRight: "6px solid transparent",
+                        borderTop: "6px solid #E2E2E2",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Subtitle */}
           <div
             style={{
               textAlign: "left",
@@ -54,6 +129,8 @@ export default function InfoCard({
           >
             {subtitle}
           </div>
+
+          {/* Detail */}
           <div
             style={{
               textAlign: "left",
@@ -63,7 +140,8 @@ export default function InfoCard({
           >
             {detail}
           </div>
-          {/* Optional progress bar with multiple colours */}
+
+          {/* Progress bar */}
           {progressBar && (
             <div
               style={{

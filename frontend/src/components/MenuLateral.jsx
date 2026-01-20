@@ -7,7 +7,7 @@ import BottomFilters from "./BottomFilters";
  * MenuLateral implements the sliding panel on the left hand side of MapPage.
  * - Vertically centered using % (responsive on resize)
  * - Height uses vh so it scales with screen height
- * - Slightly taller for better content balance
+ * - Slightly wider so header fits symmetrically
  */
 export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
   const [filters] = useState({
@@ -20,14 +20,11 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
       style={{
         position: "absolute",
         top: "50%",
-        transform: "translateY(-50%)", // centre vertical real
-        left: isOpen ? "14px" : "-325px",
-        width: "325px",
-
-        // ⬇️ ALÇADA RESPONSIVE (una mica més llarga)
-        height: "88vh",
-        maxHeight: "88vh",
-
+        transform: "translateY(-50%)",
+        left: isOpen ? "14px" : "-360px",
+        width: "360px",
+        height: "78vh",
+        maxHeight: "78vh",
         background: "#FFFFFF",
         opacity: 0.9,
         zIndex: 10,
@@ -36,16 +33,22 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         overflowX: "hidden",
       }}
     >
-      {/* Botó de tancar menú (centrat verticalment) */}
+      {/* Pestanya de tancar (fora del blanc, més amunt, més prima) */}
       <div
         onClick={onClose}
         style={{
           position: "absolute",
-          top: "50%",
-          transform: "translateY(-50%)",
+
+          // ✅ a l'alçada de la segona línia separadora
+          top: "110px",
+
+          // ✅ fora del panell blanc
           right: "0px",
-          width: "35px",
+
+          // ✅ més prima
+          width: "18px",
           height: "55px",
+
           background: "#0F6641",
           cursor: "pointer",
           display: "flex",
@@ -54,31 +57,33 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         }}
       >
         <img
-          src="/img/menuLateral/Icon ion-ios-arrow-drop-left.png"
+          src="/img/menuLateral/arrowDropDown.png"
           alt="Close menu"
           style={{
             width: "14px",
             height: "14px",
             filter: "invert(1)",
+            transform: "rotate(90deg)",
+
           }}
         />
       </div>
 
-      {/* Header de filtres */}
+      {/* Header */}
       <FilterHeader filters={filters} />
 
-      {/* Línia separadora */}
+      {/* Línia separadora (header → worldwide) */}
       <div
         style={{
           position: "absolute",
           top: "58px",
           left: "33px",
-          width: "291px",
+          right: "33px",
           border: "1px solid #DBDBDB",
         }}
       />
 
-      {/* Country + type + share */}
+      {/* Worldwide + type + share */}
       <div
         style={{
           position: "absolute",
@@ -97,13 +102,11 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
           }}
         >
           {filters.country}
-          <span style={{ marginLeft: "20px" }}>
-            {filters.typeOfLibrary}
-          </span>
+          <span style={{ marginLeft: "20px" }}>{filters.typeOfLibrary}</span>
         </div>
 
         <img
-          src="/img/menuLateral/Icon ion-share-social-outline.png"
+          src="/img/menuLateral/Share.png"
           alt="Share"
           style={{
             width: "14px",
@@ -113,13 +116,24 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         />
       </div>
 
+      {/* 🔽 LÍNIA SEPARADORA (worldwide → title) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "110px",
+          left: "33px",
+          right: "33px",
+          border: "1px solid #DBDBDB",
+        }}
+      />
+
       {/* Títol */}
       <div
         style={{
           position: "absolute",
           top: "130px",
           left: "33px",
-          width: "220px",
+          width: "240px",
           font: "normal normal bold 20px/25px Noto Sans",
           color: "#000000",
         }}
@@ -135,7 +149,7 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
           position: "absolute",
           top: "198px",
           left: "33px",
-          width: "281px",
+          right: "33px",
           font: "normal normal normal 16px/25px Noto Sans",
           color: "#4B4B4B",
         }}
