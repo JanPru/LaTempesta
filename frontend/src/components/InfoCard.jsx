@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 /*
- * InfoCard
+ * InfoCard - Resize Proof
  * - Grey tooltip on hover for info icon
  * - Tooltip: taller + narrower
  * - Text wraps correctly (never overflows)
@@ -20,7 +20,7 @@ export default function InfoCard({
 
   return (
     <div style={{ position: "relative" }}>
-      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
         {/* Leading icon */}
         <img
           src={icon}
@@ -28,7 +28,7 @@ export default function InfoCard({
           style={{
             width: iconWidth,
             height: iconHeight,
-            marginTop: "5px",
+            marginTop: "0.31rem",
             flexShrink: 0,
           }}
         />
@@ -39,10 +39,10 @@ export default function InfoCard({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              font: "normal normal bold 20px/25px Noto Sans",
+              gap: "0.5rem",
+              font: "normal normal bold 1.25rem/1.56rem Noto Sans",
               color: "#4B4B4B",
-              marginBottom: "5px",
+              marginBottom: "0.31rem",
               whiteSpace: "nowrap",
             }}
           >
@@ -58,8 +58,8 @@ export default function InfoCard({
                   src="/img/menuLateral/Information.png"
                   alt="Info"
                   style={{
-                    width: "11px",
-                    height: "11px",
+                    width: "0.69rem",
+                    height: "0.69rem",
                     cursor: "default",
                     display: "block",
                   }}
@@ -70,7 +70,7 @@ export default function InfoCard({
                   <div
                     style={{
                       position: "absolute",
-                      top: "-12px",
+                      top: "-0.75rem",
                       left: "50%",
                       transform: "translate(-50%, -100%)",
 
@@ -78,20 +78,20 @@ export default function InfoCard({
                       color: "#4B4B4B",
 
                       // ✅ més prim, però adaptable
-                      width: "170px",
-                      maxWidth: "170px",
+                      width: "10.625rem",
+                      maxWidth: "10.625rem",
                       boxSizing: "border-box",
 
                       // ✅ més alt
-                      padding: "12px 10px",
-                      font: "normal normal normal 13px/18px Noto Sans",
+                      padding: "0.75rem 0.625rem",
+                      font: "normal normal normal 0.8125rem/1.125rem Noto Sans",
 
                       // ✅ CLAU: wrap correcte
                       whiteSpace: "normal",
                       overflowWrap: "anywhere",
                       wordBreak: "break-word",
 
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+                      boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
                       zIndex: 50,
                       textAlign: "left",
                     }}
@@ -107,9 +107,9 @@ export default function InfoCard({
                         transform: "translateX(-50%)",
                         width: 0,
                         height: 0,
-                        borderLeft: "6px solid transparent",
-                        borderRight: "6px solid transparent",
-                        borderTop: "6px solid #E2E2E2",
+                        borderLeft: "0.375rem solid transparent",
+                        borderRight: "0.375rem solid transparent",
+                        borderTop: "0.375rem solid #E2E2E2",
                       }}
                     />
                   </div>
@@ -122,9 +122,9 @@ export default function InfoCard({
           <div
             style={{
               textAlign: "left",
-              font: "normal normal normal 16px/25px Noto Sans",
+              font: "normal normal normal 1rem/1.56rem Noto Sans",
               color: "#4B4B4B",
-              marginBottom: "3px",
+              marginBottom: "0.19rem",
             }}
           >
             {subtitle}
@@ -134,7 +134,7 @@ export default function InfoCard({
           <div
             style={{
               textAlign: "left",
-              font: "normal normal normal 16px/25px Noto Sans",
+              font: "normal normal normal 1rem/1.56rem Noto Sans",
               color: "#939393",
             }}
           >
@@ -146,11 +146,11 @@ export default function InfoCard({
             <div
               style={{
                 width: "100%",
-                height: "8px",
+                height: "0.5rem",
                 background: "#E0E0E0",
-                borderRadius: "4px",
+                borderRadius: "0.25rem",
                 overflow: "hidden",
-                marginTop: "10px",
+                marginTop: "0.625rem",
                 display: "flex",
               }}
             >

@@ -4,16 +4,53 @@ import InfoCard from "./InfoCard";
 import BottomFilters from "./BottomFilters";
 
 /*
- * MenuLateral implements the sliding panel on the left hand side of MapPage.
- * - Vertically centered using % (responsive on resize)
- * - Height uses vh so it scales with screen height
- * - Slightly wider so header fits symmetrically
+ * MenuLateral
+ * - BottomFilters no longer uses bottom positioning
+ * - It is placed "just below the last InfoCard" using TOP calc
+ * - So on resize, it doesn't float up/down with panel height
  */
-export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
+export default function MenuLateral({
+  isLoading,
+  isOpen,
+  onClose,
+
+  countries = [],
+  selectedCountry = "Worldwide",
+  onSelectCountry,
+
+  countriesCount = 0,
+  stats,
+}) {
   const [filters] = useState({
-    country: "Worldwide",
-    typeOfLibrary: "142 countries",
+    country: "Country",
+    typeOfLibrary: "Type of library",
   });
+
+  const showCountriesCount = selectedCountry === "Worldwide";
+
+  const s = stats || {
+    totalPoints: 0,
+    connectivityMapped: 0,
+    downloadMeasured: 0,
+    goodDownload: 0,
+  };
+
+  // ===========
+  // ✅ LAYOUT CONSTANTS (only touch these if needed)
+  // ===========
+  const INFOCARDS_TOP = "35.64%";     // same as your current cards container top
+  const INFOCARDS_GAP_REM = 1.25;     // gap: 1.25rem
+  const INFOCARD_HEIGHT_REM = 6.2;    // approx height of one InfoCard block
+  const INFOCARDS_COUNT = 3;
+  const AFTER_CARDS_MARGIN_REM = 8.0; // margin between last card and filters
+
+  // Top for BottomFilters = INFOCARDS_TOP + height of 3 cards + gaps + margin
+  const bottomFiltersTop = `calc(
+    ${INFOCARDS_TOP} +
+    (${INFOCARDS_COUNT} * ${INFOCARD_HEIGHT_REM}rem) +
+    (${INFOCARDS_COUNT - 1} * ${INFOCARDS_GAP_REM}rem) +
+    ${AFTER_CARDS_MARGIN_REM}rem
+  )`;
 
   return (
     <div
@@ -21,8 +58,8 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         position: "absolute",
         top: "50%",
         transform: "translateY(-50%)",
-        left: isOpen ? "14px" : "-360px",
-        width: "360px",
+        left: isOpen ? "0.875rem" : "-22.5rem",
+        width: "22.5rem",
         height: "78vh",
         maxHeight: "78vh",
         background: "#FFFFFF",
@@ -33,63 +70,61 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         overflowX: "hidden",
       }}
     >
-      {/* Pestanya de tancar (fora del blanc, més amunt, més prima) */}
+      {/* Pestanya de tancar */}
       <div
         onClick={onClose}
         style={{
           position: "absolute",
-
-          // ✅ a l'alçada de la segona línia separadora
-          top: "110px",
-
-          // ✅ fora del panell blanc
-          right: "0px",
-
-          // ✅ més prima
-          width: "18px",
-          height: "55px",
-
+          top: "14.1%",
+          right: "0",
+          width: "1.125rem",
+          height: "7.05%",
           background: "#0F6641",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          zIndex: 20,
         }}
       >
         <img
           src="/img/menuLateral/arrowDropDown.png"
           alt="Close menu"
           style={{
-            width: "14px",
-            height: "14px",
+            width: "0.875rem",
+            height: "0.875rem",
             filter: "invert(1)",
             transform: "rotate(90deg)",
-
           }}
         />
       </div>
 
       {/* Header */}
-      <FilterHeader filters={filters} />
+      <FilterHeader
+        filters={filters}
+        countries={countries}
+        selectedCountry={selectedCountry}
+        onSelectCountry={onSelectCountry}
+      />
 
       {/* Línia separadora (header → worldwide) */}
       <div
         style={{
           position: "absolute",
-          top: "58px",
-          left: "33px",
-          right: "33px",
+          top: "7.44%",
+          left: "9.17%",
+          right: "9.17%",
           border: "1px solid #DBDBDB",
         }}
       />
 
-      {/* Worldwide + type + share */}
+      {/* Country selected + share */}
       <div
         style={{
           position: "absolute",
-          top: "74px",
-          left: "33px",
-          right: "33px",
+          top: "9.49%",
+          left: "9.17%",
+          right: "9.17%",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -97,44 +132,52 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
       >
         <div
           style={{
-            font: "normal normal normal 16px/25px Noto Sans",
+            font: "normal normal normal 1rem/1.56rem Noto Sans",
             color: "#000000",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
-          {filters.country}
-          <span style={{ marginLeft: "20px" }}>{filters.typeOfLibrary}</span>
+          {selectedCountry}
+          {showCountriesCount && (
+            <span style={{ marginLeft: "1.25rem" }}>
+              {countriesCount} countries
+            </span>
+          )}
         </div>
 
         <img
           src="/img/menuLateral/Share.png"
           alt="Share"
           style={{
-            width: "14px",
-            height: "15px",
+            width: "0.875rem",
+            height: "0.94rem",
             cursor: "pointer",
+            flexShrink: 0,
           }}
         />
       </div>
 
-      {/* 🔽 LÍNIA SEPARADORA (worldwide → title) */}
+      {/* Línia separadora (worldwide → title) */}
       <div
         style={{
           position: "absolute",
-          top: "110px",
-          left: "33px",
-          right: "33px",
+          top: "14.1%",
+          left: "9.17%",
+          right: "9.17%",
           border: "1px solid #DBDBDB",
         }}
       />
 
-      {/* Títol */}
+      {/* Title */}
       <div
         style={{
           position: "absolute",
-          top: "130px",
-          left: "33px",
-          width: "240px",
-          font: "normal normal bold 20px/25px Noto Sans",
+          top: "16.67%",
+          left: "9.17%",
+          width: "66.67%",
+          font: "normal normal bold 1.25rem/1.56rem Noto Sans",
           color: "#000000",
         }}
       >
@@ -143,14 +186,14 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
         Boosting Connectivity
       </div>
 
-      {/* Descripció */}
+      {/* Description */}
       <div
         style={{
           position: "absolute",
-          top: "198px",
-          left: "33px",
-          right: "33px",
-          font: "normal normal normal 16px/25px Noto Sans",
+          top: "25.38%",
+          left: "9.17%",
+          right: "9.17%",
+          font: "normal normal normal 1rem/1.56rem Noto Sans",
           color: "#4B4B4B",
         }}
       >
@@ -161,54 +204,88 @@ export default function MenuLateral({ stats, isLoading, isOpen, onClose }) {
       <div
         style={{
           position: "absolute",
-          top: "278px",
-          left: "33px",
-          right: "33px",
+          top: INFOCARDS_TOP,
+          left: "9.17%",
+          right: "9.17%",
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
+          gap: `${INFOCARDS_GAP_REM}rem`,
         }}
       >
         <InfoCard
           icon="/img/menuLateral/Icon core-location-pin.png"
-          iconWidth="15px"
-          iconHeight="21px"
-          title="1.2 M / 2.8 M"
+          iconWidth="0.94rem"
+          iconHeight="1.31rem"
+          title={`${s.totalPoints.toLocaleString()}`}
           subtitle="Libraries location mapped"
-          detail="across 142 countries"
+          detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
         />
 
         <InfoCard
           icon="/img/menuLateral/Icon akar-wifi (1).png"
-          iconWidth="20px"
-          iconHeight="17px"
-          title="430 k"
+          iconWidth="1.25rem"
+          iconHeight="1.06rem"
+          title={`${s.connectivityMapped.toLocaleString()}`}
           subtitle="Libraries connectivity status mapped"
-          detail="across 36 countries"
+          detail={
+            s.totalPoints
+              ? `${Math.round((s.connectivityMapped / s.totalPoints) * 100)}% of mapped libraries`
+              : "N/A"
+          }
           hasInfo={true}
-          progressBar={{
-            colors: ["#0F6641", "#E74C3C", "#3B5998"],
-            widths: [40, 30, 30],
-          }}
+          progressBar={
+            s.totalPoints
+              ? {
+                  colors: ["#0F6641", "#E0E0E0"],
+                  widths: [
+                    (s.connectivityMapped / s.totalPoints) * 100,
+                    100 - (s.connectivityMapped / s.totalPoints) * 100,
+                  ],
+                }
+              : null
+          }
         />
 
         <InfoCard
           icon="/img/menuLateral/Icon core-cloud-download.png"
-          iconWidth="20px"
-          iconHeight="17px"
-          title="121 k"
+          iconWidth="1.25rem"
+          iconHeight="1.06rem"
+          title={`${s.goodDownload.toLocaleString()}`}
           subtitle="Libraries with good download speed"
-          detail="of 311 K libraries inspected"
+          detail={
+            s.downloadMeasured
+              ? `of ${s.downloadMeasured.toLocaleString()} libraries inspected`
+              : "No download data detected"
+          }
           hasInfo={true}
-          progressBar={{
-            colors: ["#0F6641", "#FFA500", "#E74C3C"],
-            widths: [50, 30, 20],
-          }}
+          progressBar={
+            s.downloadMeasured
+              ? {
+                  colors: ["#0F6641", "#E0E0E0"],
+                  widths: [
+                    (s.goodDownload / s.downloadMeasured) * 100,
+                    100 - (s.goodDownload / s.downloadMeasured) * 100,
+                  ],
+                }
+              : null
+          }
         />
       </div>
 
-      {/* Filtres inferiors */}
-      <BottomFilters isLoading={isLoading} />
+      {/* ✅ Bottom filters: placed under last InfoCard, NOT bottom-based */}
+      <div
+        style={{
+          position: "absolute",
+          top: bottomFiltersTop,
+          left: 0,
+          right: 0,
+        }}
+      >
+        <BottomFilters isLoading={isLoading} />
+      </div>
+
+      {/* ✅ Optional: give scroll room so the last filters aren't cut */}
+      <div style={{ position: "absolute", top: `calc(${bottomFiltersTop} + 6rem)`, height: "1px" }} />
     </div>
   );
 }

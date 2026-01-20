@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 /*
- * BottomFilters
+ * BottomFilters - Resize Proof
  * - Info icon shows a grey tooltip on hover (like screenshot)
  * - Tooltip is wider & less tall
  * - Pointer is a real triangle (not a rotated square)
@@ -14,28 +14,28 @@ export default function BottomFilters({ isLoading }) {
       icon: "/img/menuLateral/Icon akar-wifi (1).png",
       label: "Library status",
       active: true,
-      iconStyle: { width: "20px", height: "17px" },
+      iconStyle: { width: "1.5rem", height: "1.06rem" },
       infoText: "Library status of the library",
     },
     {
       icon: "/img/menuLateral/Grupo 9.png",
       label: "Type of\nconnect.",
       active: false,
-      iconStyle: { width: "20px", height: "17px" },
+      iconStyle: { width: "1.25rem", height: "1.06rem" },
       infoText: "Type of internet connection of the library",
     },
     {
       icon: "/img/menuLateral/Icon akar-triangle-alert.png",
       label: "Not\nconnect.",
       active: false,
-      iconStyle: { width: "20px", height: "17px" },
+      iconStyle: { width: "1.25rem", height: "1.06rem" },
       infoText: "Library reported as not connected",
     },
     {
       icon: "/img/menuLateral/Icon akar-star.png",
       label: "Perceived\nquality",
       active: false,
-      iconStyle: { width: "20px", height: "17px" },
+      iconStyle: { width: "1.25rem", height: "1.06rem" },
       infoText: "Perceived quality of the library connection",
     },
   ];
@@ -44,21 +44,21 @@ export default function BottomFilters({ isLoading }) {
     <div
       style={{
         position: "absolute",
-        bottom: "10px",
-        left: "0px",
-        right: "0px",
+        bottom: "1.3%",
+        left: "0",
+        right: "0",
         display: "flex",
         justifyContent: "center",
-        gap: "8px",
+        gap: "0.5rem",
         flexWrap: "wrap",
-        padding: "0 15px",
+        padding: "0 4.17%",
       }}
     >
       {isLoading ? (
         <div
           style={{
             textAlign: "center",
-            font: "normal normal normal 13px/16px Noto Sans",
+            font: "normal normal normal 0.8125rem/1rem Noto Sans",
             color: "#4B4B4B",
           }}
         >
@@ -69,16 +69,16 @@ export default function BottomFilters({ isLoading }) {
           <div
             key={idx}
             style={{
-              width: "70px",
-              height: "70px",
+              width: "4.375rem",
+              height: "4.375rem",
               background: filter.active ? "#0F6641" : "#E2E2E2",
-              borderRadius: "0px",
+              borderRadius: "0",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
               cursor: "pointer",
               transition: "background 0.2s",
-              padding: "8px",
+              padding: "0.5rem",
               boxSizing: "border-box",
               position: "relative",
               overflow: "visible",
@@ -113,8 +113,8 @@ export default function BottomFilters({ isLoading }) {
               <div
                 style={{
                   position: "relative",
-                  width: "11px",
-                  height: "11px",
+                  width: "0.69rem",
+                  height: "0.69rem",
                   flexShrink: 0,
                 }}
                 onMouseEnter={() => setHoverInfoIdx(idx)}
@@ -124,8 +124,8 @@ export default function BottomFilters({ isLoading }) {
                   src="/img/menuLateral/Information.png"
                   alt="Info"
                   style={{
-                    width: "11px",
-                    height: "11px",
+                    width: "0.69rem",
+                    height: "0.69rem",
                     opacity: filter.active ? 0.9 : 0.7,
                     filter: filter.active ? "invert(1)" : "none",
                     display: "block",
@@ -145,13 +145,13 @@ export default function BottomFilters({ isLoading }) {
                       color: "#4B4B4B",
 
                       // ✅ més ample i menys alt
-                      width: "100px",
-                      padding: "8px 10px",
-                      font: "normal normal normal 13px/16px Noto Sans",
+                      width: "6.25rem",
+                      padding: "0.5rem 0.625rem",
+                      font: "normal normal normal 0.8125rem/1rem Noto Sans",
 
-                      // ✅ suau, sense “caixa dura”
-                      border: "0px",
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+                      // ✅ suau, sense "caixa dura"
+                      border: "0",
+                      boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
 
                       zIndex: 50,
                       textAlign: "left",
@@ -169,9 +169,9 @@ export default function BottomFilters({ isLoading }) {
 
                         width: 0,
                         height: 0,
-                        borderLeft: "7px solid transparent",
-                        borderRight: "7px solid transparent",
-                        borderTop: "7px solid #E2E2E2",
+                        borderLeft: "0.4375rem solid transparent",
+                        borderRight: "0.4375rem solid transparent",
+                        borderTop: "0.4375rem solid #E2E2E2",
                       }}
                     />
                   </div>
@@ -183,11 +183,11 @@ export default function BottomFilters({ isLoading }) {
             <div
               style={{
                 textAlign: "left",
-                font: "normal normal normal 13px/16px Noto Sans",
+                font: "normal normal normal 0.8125rem/1rem Noto Sans",
                 color: filter.active ? "#FFFFFF" : "#4B4B4B",
                 whiteSpace: "pre-line",
-                lineHeight: "16px",
-                marginTop: "6px",
+                lineHeight: "1rem",
+                marginTop: "0.375rem",
               }}
             >
               {filter.label}

@@ -3,30 +3,43 @@ import Map, { Source, Layer, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Papa from "papaparse";
 
-// External UI components
 import MenuLateral from "../components/MenuLateral";
 
-/*
- * MapPage wraps the interactive map together with a sliding side menu.  The
- * component loads a CSV of library locations on mount, converts it into
- * GeoJSON and then renders it using Mapbox.  When the user hovers or
- * clicks on a point the feature state is updated, which drives the colour
- * and stroke styling defined below.  A popup is displayed on click to
- * surface the library details.
- */
 export default function MapPage() {
   const mapRef = useRef(null);
+
+  const [fullGeojson, setFullGeojson] = useState(null);
   const [geojson, setGeojson] = useState(null);
+
   const [error, setError] = useState("");
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [selectedFeature, setSelectedFeature] = useState(null);
+
   const [mapStyle, setMapStyle] = useState("grayScale");
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0 });
+
   const [menuOpen, setMenuOpen] = useState(true);
 
-  // Initial viewport centres on Barcelona by default.  Using useMemo avoids
-  // recreating this object on every render.
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("Worldwide");
+
+  // ✅ stats globals i stats del país seleccionat
+  const [globalStats, setGlobalStats] = useState({
+    totalPoints: 0,
+    connectivityMapped: 0,
+    downloadMeasured: 0,
+    goodDownload: 0,
+  });
+
+  const [countryStats, setCountryStats] = useState({
+    totalPoints: 0,
+    connectivityMapped: 0,
+    downloadMeasured: 0,
+    goodDownload: 0,
+  });
+
+  const [countryBBoxes, setCountryBBoxes] = useState(null);
+
   const initialViewState = useMemo(
     () => ({
       longitude: 2.1734,
@@ -38,23 +51,172 @@ export default function MapPage() {
     []
   );
 
-  // When hovering over a point the feature state is marked so the circle
-  // paint expression can draw a different colour and stroke width.  We
-  // remember the last hovered feature so we can reset it on mouse leave.
-  const onMouseEnter = useCallback(
-    (e) => {
-      if (!e.features || !e.features.length) return;
-      const feature = e.features[0];
-      setHoveredFeature(feature);
-      if (mapRef.current) {
-        mapRef.current.getMap().setFeatureState(
-          { source: "libraries-source", id: feature.id },
-          { hover: true }
-        );
+  const normalize = (s) =>
+    String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  // 🔎 Detectar país del CSV de forma robusta
+  const extractCountryFromProps = (props) => {
+    const keys = [
+      "country",
+      "Country",
+      "COUNTRY",
+      "admin",
+      "ADMIN",
+      "nation",
+      "Nation",
+      "país",
+      "pais",
+      "País",
+      "Pais",
+    ];
+    for (const k of keys) {
+      if (props && props[k]) return String(props[k]).trim();
+    }
+    return "";
+  };
+
+  // 🔎 Heurístiques per trobar camps de connectivitat i download
+  const hasConnectivityInfo = (props) => {
+    if (!props) return false;
+    for (const [k, v] of Object.entries(props)) {
+      const key = String(k).toLowerCase();
+      if (
+        key.includes("connect") ||
+        key.includes("connectivity") ||
+        key.includes("status") ||
+        key.includes("wifi")
+      ) {
+        const s = String(v ?? "").trim();
+        if (s && s.toLowerCase() !== "na" && s.toLowerCase() !== "n/a") return true;
       }
-    },
-    []
-  );
+    }
+    return false;
+  };
+
+  const getDownloadSpeed = (props) => {
+    if (!props) return null;
+
+    // Busquem un camp que sembli download/speed/mbps
+    for (const [k, v] of Object.entries(props)) {
+      const key = String(k).toLowerCase();
+      if (
+        key.includes("download") &&
+        (key.includes("speed") || key.includes("mbps") || key.includes("rate"))
+      ) {
+        const num = Number(v);
+        if (Number.isFinite(num)) return num;
+      }
+      if (key.includes("dl") && key.includes("mbps")) {
+        const num = Number(v);
+        if (Number.isFinite(num)) return num;
+      }
+    }
+    return null;
+  };
+
+  const computeStatsFromFeatures = (features) => {
+    const totalPoints = features.length;
+
+    let connectivityMapped = 0;
+    let downloadMeasured = 0;
+    let goodDownload = 0;
+
+    // Llindar “good download” (ajustable)
+    const GOOD_DL_MBPS = 10;
+
+    for (const f of features) {
+      const props = f.properties || {};
+      if (hasConnectivityInfo(props)) connectivityMapped++;
+
+      const dl = getDownloadSpeed(props);
+      if (dl !== null) {
+        downloadMeasured++;
+        if (dl >= GOOD_DL_MBPS) goodDownload++;
+      }
+    }
+
+    return { totalPoints, connectivityMapped, downloadMeasured, goodDownload };
+  };
+
+  // Compute bbox for country geojson feature
+  const computeBBox = (geometry) => {
+    const coords = [];
+    const walk = (c) => {
+      if (!c) return;
+      if (typeof c[0] === "number" && typeof c[1] === "number") coords.push(c);
+      else c.forEach(walk);
+    };
+    walk(geometry.coordinates);
+
+    if (!coords.length) return null;
+
+    let minLon = Infinity,
+      minLat = Infinity,
+      maxLon = -Infinity,
+      maxLat = -Infinity;
+
+    for (const [lon, lat] of coords) {
+      minLon = Math.min(minLon, lon);
+      minLat = Math.min(minLat, lat);
+      maxLon = Math.max(maxLon, lon);
+      maxLat = Math.max(maxLat, lat);
+    }
+
+    return [
+      [minLon, minLat],
+      [maxLon, maxLat],
+    ];
+  };
+
+  // ✅ Carrega bboxes reals de països (per fer fitBounds a país sencer)
+  useEffect(() => {
+    const loadCountriesGeo = async () => {
+      try {
+        const url =
+          "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("No puc carregar el geojson de països");
+
+        const gj = await res.json();
+
+        const index = {};
+        for (const f of gj.features || []) {
+          const name = f?.properties?.name;
+          const iso2 = f?.properties?.["ISO3166-1-Alpha-2"];
+          const iso3 = f?.properties?.["ISO3166-1-Alpha-3"];
+          const bbox = computeBBox(f.geometry);
+          if (!bbox) continue;
+
+          if (name) index[normalize(name)] = bbox;
+          if (iso2) index[normalize(iso2)] = bbox;
+          if (iso3) index[normalize(iso3)] = bbox;
+        }
+
+        setCountryBBoxes(index);
+      } catch {
+        setCountryBBoxes(null);
+      }
+    };
+
+    loadCountriesGeo();
+  }, []);
+
+  const onMouseEnter = useCallback((e) => {
+    if (!e.features || !e.features.length) return;
+    const feature = e.features[0];
+    setHoveredFeature(feature);
+
+    if (mapRef.current) {
+      mapRef.current.getMap().setFeatureState(
+        { source: "libraries-source", id: feature.id },
+        { hover: true }
+      );
+    }
+  }, []);
 
   const onMouseLeave = useCallback(() => {
     if (hoveredFeature && mapRef.current) {
@@ -66,56 +228,80 @@ export default function MapPage() {
     setHoveredFeature(null);
   }, [hoveredFeature]);
 
+  // Click: no zoom a tope
   const onClick = useCallback((e) => {
     if (!e.features || !e.features.length) return;
     const feature = e.features[0];
     setSelectedFeature(feature);
+
     if (mapRef.current) {
-      mapRef.current.getMap().flyTo({
+      const map = mapRef.current.getMap();
+      map.flyTo({
         center: feature.geometry.coordinates,
-        zoom: 12,
-        duration: 800,
+        zoom: Math.min(map.getZoom(), 6),
+        duration: 600,
       });
     }
   }, []);
 
+  // ✅ Carrega CSV
   useEffect(() => {
     const load = async () => {
       try {
         setError("");
         setIsLoading(true);
+
         const res = await fetch("/arxiu_sortida.csv");
         if (!res.ok) throw new Error(`No puc carregar el CSV: ${res.status}`);
+
         const text = await res.text();
         const parsed = Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
           dynamicTyping: true,
         });
+
+        const countrySet = new Set();
+
         const features = (parsed.data || [])
           .map((row, index) => {
             const lat = Number(row.lat);
             const lon = Number(row.lon);
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
             const { lat: _lat, lon: _lon, ...props } = row;
+
+            const c = extractCountryFromProps(props);
+            if (c) countrySet.add(c);
+
             return {
               type: "Feature",
               id: index,
               geometry: { type: "Point", coordinates: [lon, lat] },
               properties: {
                 ...props,
+                __country: c,
                 hasData: Boolean(props.name || props.address),
               },
             };
           })
           .filter(Boolean);
+
         const gj = { type: "FeatureCollection", features };
+
+        setFullGeojson(gj);
         setGeojson(gj);
-        setStats({ total: features.length });
-        // Fit the map to the bounds of our data.  Leave room for the side menu
-        // by padding left when the menu is open.
+
+        const gStats = computeStatsFromFeatures(features);
+        setGlobalStats(gStats);
+        setCountryStats(gStats);
+
+        setCountries(Array.from(countrySet));
+
+        // Fit inicial a tots (sense exagerar)
         setTimeout(() => {
           if (!features.length || !mapRef.current) return;
+
           const bounds = features.reduce(
             (acc, f) => {
               const [lon, lat] = f.geometry.coordinates;
@@ -126,22 +312,26 @@ export default function MapPage() {
             },
             [[Infinity, Infinity], [-Infinity, -Infinity]]
           );
+
           mapRef.current.getMap().fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: menuOpen ? 340 : 60, right: 60 },
-            duration: 1000,
-            maxZoom: 15,
+            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+            duration: 800,
+            maxZoom: 3.5,
           });
         }, 100);
+
         setIsLoading(false);
       } catch (e) {
         setError(e.message || "Error carregant el CSV");
         setIsLoading(false);
       }
     };
-    load();
-  }, [menuOpen]);
 
-  // Adjust the mouse cursor when hovering over features
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cursor pointer on hover
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current.getMap();
@@ -152,6 +342,70 @@ export default function MapPage() {
       map.getCanvas().style.cursor = "";
     });
   }, [geojson]);
+
+  // ✅ Quan selecciones país:
+  // - canvia punts (només país)
+  // - canvia stats cards (només país)
+  // - fa fitBounds al bbox real país
+  const handleSelectCountry = useCallback(
+    (country) => {
+      setSelectedCountry(country);
+      setSelectedFeature(null);
+
+      if (!fullGeojson) return;
+
+      // Worldwide
+      if (!country || country === "Worldwide") {
+        setGeojson(fullGeojson);
+        setCountryStats(globalStats);
+
+        // Fit global (suau)
+        if (mapRef.current && fullGeojson.features.length) {
+          const bounds = fullGeojson.features.reduce(
+            (acc, f) => {
+              const [lon, lat] = f.geometry.coordinates;
+              return [
+                [Math.min(acc[0][0], lon), Math.min(acc[0][1], lat)],
+                [Math.max(acc[1][0], lon), Math.max(acc[1][1], lat)],
+              ];
+            },
+            [[Infinity, Infinity], [-Infinity, -Infinity]]
+          );
+
+          mapRef.current.getMap().fitBounds(bounds, {
+            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+            duration: 800,
+            maxZoom: 3.5,
+          });
+        }
+        return;
+      }
+
+      // Filtra punts per país
+      const n = normalize(country);
+      const filteredFeatures = fullGeojson.features.filter(
+        (f) => normalize(f.properties?.__country) === n
+      );
+
+      setGeojson({ type: "FeatureCollection", features: filteredFeatures });
+
+      // Stats del país
+      setCountryStats(computeStatsFromFeatures(filteredFeatures));
+
+      // Fit bbox real del país (no punts)
+      if (mapRef.current && countryBBoxes) {
+        const bbox = countryBBoxes[n];
+        if (bbox) {
+          mapRef.current.getMap().fitBounds(bbox, {
+            padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
+            duration: 800,
+            maxZoom: 5.0,
+          });
+        }
+      }
+    },
+    [fullGeojson, countryBBoxes, globalStats, menuOpen]
+  );
 
   return (
     <div
@@ -164,25 +418,25 @@ export default function MapPage() {
         position: "relative",
       }}
     >
-      {/* Side menu */}
       <MenuLateral
-        stats={stats}
         isLoading={isLoading}
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
+        countries={countries}
+        selectedCountry={selectedCountry}
+        onSelectCountry={handleSelectCountry}
+        countriesCount={countries.length}
+        stats={countryStats}
       />
 
-      {/* ✅ NOVA PESTANYA per re-obrir (igual que la de tancar) */}
       {!menuOpen && (
         <div
           onClick={() => setMenuOpen(true)}
           style={{
             position: "absolute",
-            top: "50%",
-            transform: "translateY(-50%)",
+            top: "110px",
             left: "14px",
             zIndex: 10,
-
             width: "18px",
             height: "55px",
             background: "#0F6641",
@@ -199,13 +453,12 @@ export default function MapPage() {
               width: "14px",
               height: "14px",
               filter: "invert(1)",
-              transform: "rotate(-90deg)", // obrir
+              transform: "rotate(-90deg)",
             }}
           />
         </div>
       )}
 
-      {/* Error banner */}
       {error && (
         <div
           style={{
@@ -224,7 +477,6 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Map */}
       <Map
         ref={mapRef}
         initialViewState={initialViewState}
@@ -246,6 +498,7 @@ export default function MapPage() {
             <Layer {...LAYER_CONFIG.points} />
           </Source>
         )}
+
         {selectedFeature && (
           <Popup
             longitude={selectedFeature.geometry.coordinates[0]}
@@ -267,7 +520,7 @@ export default function MapPage() {
                 {selectedFeature.properties.name || "Biblioteca"}
               </h3>
               {Object.entries(selectedFeature.properties)
-                .filter(([key]) => key !== "hasData")
+                .filter(([key]) => key !== "hasData" && key !== "__country")
                 .map(([key, value]) => (
                   <div key={key} style={{ fontSize: "13px", marginBottom: "4px" }}>
                     <span style={{ color: "#666", fontWeight: 500 }}>{key}: </span>
@@ -282,25 +535,30 @@ export default function MapPage() {
   );
 }
 
-// Layer configuration for the map.  When a feature is hovered the
-// circle becomes blue with a thicker white border.
 export const LAYER_CONFIG = {
   points: {
     id: "library-points",
     type: "circle",
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 3, 5, 5, 10, 8],
-      "circle-color": ["case", ["boolean", ["feature-state", "hover"], false], "#006FFF", "#00A67E"],
-      "circle-stroke-width": ["case", ["boolean", ["feature-state", "hover"], false], 2, 1],
+      "circle-color": [
+        "case",
+        ["boolean", ["feature-state", "hover"], false],
+        "#006FFF",
+        "#00A67E",
+      ],
+      "circle-stroke-width": [
+        "case",
+        ["boolean", ["feature-state", "hover"], false],
+        2,
+        1,
+      ],
       "circle-stroke-color": "#FFFFFF",
       "circle-opacity": 1,
     },
   },
 };
 
-// Mapbox style overrides.  We default to a grayscale map when the side menu
-// is open.  Additional styles could be added in the future by extending
-// this object.
 export const MAP_STYLES = {
   light: "mapbox://styles/mapbox/light-v11",
   streets: "mapbox://styles/mapbox/streets-v12",
