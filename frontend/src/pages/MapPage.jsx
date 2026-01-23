@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import Map, { Source, Layer, Popup } from "react-map-gl/mapbox";
+import Map, { Source, Layer } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Papa from "papaparse";
 
 import MenuLateral from "../components/MenuLateral";
+import LibraryInfoPopup from "../components/LibraryInfoPopup";
 
 export default function MapPage() {
   const mapRef = useRef(null);
@@ -205,18 +206,30 @@ export default function MapPage() {
     loadCountriesGeo();
   }, []);
 
-  const onMouseEnter = useCallback((e) => {
-    if (!e.features || !e.features.length) return;
-    const feature = e.features[0];
-    setHoveredFeature(feature);
+  const onMouseEnter = useCallback(
+    (e) => {
+      if (!e.features || !e.features.length) return;
+      const feature = e.features[0];
 
-    if (mapRef.current) {
-      mapRef.current.getMap().setFeatureState(
-        { source: "libraries-source", id: feature.id },
-        { hover: true }
-      );
-    }
-  }, []);
+      // neteja hover anterior
+      if (hoveredFeature && mapRef.current) {
+        mapRef.current.getMap().setFeatureState(
+          { source: "libraries-source", id: hoveredFeature.id },
+          { hover: false }
+        );
+      }
+
+      setHoveredFeature(feature);
+
+      if (mapRef.current) {
+        mapRef.current.getMap().setFeatureState(
+          { source: "libraries-source", id: feature.id },
+          { hover: true }
+        );
+      }
+    },
+    [hoveredFeature]
+  );
 
   const onMouseLeave = useCallback(() => {
     if (hoveredFeature && mapRef.current) {
@@ -228,21 +241,36 @@ export default function MapPage() {
     setHoveredFeature(null);
   }, [hoveredFeature]);
 
-  // Click: no zoom a tope
-  const onClick = useCallback((e) => {
-    if (!e.features || !e.features.length) return;
-    const feature = e.features[0];
-    setSelectedFeature(feature);
+  // Click: selecciona biblioteca + fly suau (sense zoom exagerat)
+const onClick = useCallback((e) => {
+  if (!e.features || !e.features.length || !mapRef.current) return;
 
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      map.flyTo({
-        center: feature.geometry.coordinates,
-        zoom: Math.min(map.getZoom(), 6),
-        duration: 600,
-      });
-    }
-  }, []);
+  const feature = e.features[0];
+  setSelectedFeature(feature);
+
+  const map = mapRef.current.getMap();
+  const [lon, lat] = feature.geometry.coordinates;
+
+  const currentZoom = map.getZoom();
+
+  // ✅ zoom suau, sense passar-nos
+  const TARGET_ZOOM = 6.5; // zoom “agradable” per biblioteca
+  const MAX_ZOOM = 8;     // límit dur
+  const MIN_ZOOM = 4.5;   // si estàs molt lluny, assegura focus
+
+  const nextZoom = Math.max(
+    MIN_ZOOM,
+    Math.min(MAX_ZOOM, Math.max(currentZoom, TARGET_ZOOM))
+  );
+
+  map.flyTo({
+    center: [lon, lat],
+    zoom: nextZoom,
+    duration: 600,
+    essential: true,
+  });
+}, []);
+
 
   // ✅ Carrega CSV
   useEffect(() => {
@@ -335,12 +363,18 @@ export default function MapPage() {
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current.getMap();
+
     map.on("mouseenter", LAYER_CONFIG.points.id, () => {
       map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", LAYER_CONFIG.points.id, () => {
       map.getCanvas().style.cursor = "";
     });
+
+    return () => {
+      map.off("mouseenter", LAYER_CONFIG.points.id, () => {});
+      map.off("mouseleave", LAYER_CONFIG.points.id, () => {});
+    };
   }, [geojson]);
 
   // ✅ Quan selecciones país:
@@ -421,43 +455,13 @@ export default function MapPage() {
       <MenuLateral
         isLoading={isLoading}
         isOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        onToggle={() => setMenuOpen((v) => !v)}   // ✅ toggle
         countries={countries}
         selectedCountry={selectedCountry}
         onSelectCountry={handleSelectCountry}
         countriesCount={countries.length}
         stats={countryStats}
       />
-
-      {!menuOpen && (
-        <div
-          onClick={() => setMenuOpen(true)}
-          style={{
-            position: "absolute",
-            top: "110px",
-            left: "14px",
-            zIndex: 10,
-            width: "18px",
-            height: "55px",
-            background: "#0F6641",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <img
-            src="/img/menuLateral/arrowDropDown.png"
-            alt="Open menu"
-            style={{
-              width: "14px",
-              height: "14px",
-              filter: "invert(1)",
-              transform: "rotate(-90deg)",
-            }}
-          />
-        </div>
-      )}
 
       {error && (
         <div
@@ -486,7 +490,7 @@ export default function MapPage() {
         style={{
           width: "100%",
           height: "100%",
-          filter: "grayscale(100%) brightness(1.1) contrast(0.9)",
+          //filter: "grayscale(100%) brightness(1.1) contrast(0.9)",
         }}
         interactiveLayerIds={[LAYER_CONFIG.points.id]}
         onMouseEnter={onMouseEnter}
@@ -499,36 +503,13 @@ export default function MapPage() {
           </Source>
         )}
 
+        {/* ✅ Component reusable: Pin + pestanya info */}
         {selectedFeature && (
-          <Popup
-            longitude={selectedFeature.geometry.coordinates[0]}
-            latitude={selectedFeature.geometry.coordinates[1]}
-            anchor="bottom"
+          <LibraryInfoPopup
+            feature={selectedFeature}
             onClose={() => setSelectedFeature(null)}
-            closeButton={true}
-            closeOnClick={false}
-          >
-            <div style={{ padding: "12px" }}>
-              <h3
-                style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "16px",
-                  color: "#00A67E",
-                  fontWeight: 600,
-                }}
-              >
-                {selectedFeature.properties.name || "Biblioteca"}
-              </h3>
-              {Object.entries(selectedFeature.properties)
-                .filter(([key]) => key !== "hasData" && key !== "__country")
-                .map(([key, value]) => (
-                  <div key={key} style={{ fontSize: "13px", marginBottom: "4px" }}>
-                    <span style={{ color: "#666", fontWeight: 500 }}>{key}: </span>
-                    <span>{value || "N/A"}</span>
-                  </div>
-                ))}
-            </div>
-          </Popup>
+            pinSrc="/img/pin.svg"
+          />
         )}
       </Map>
     </div>
@@ -541,23 +522,41 @@ export const LAYER_CONFIG = {
     type: "circle",
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 3, 5, 5, 10, 8],
+
       "circle-color": [
         "case",
+
+        // Hover highlight
         ["boolean", ["feature-state", "hover"], false],
-        "#006FFF",
-        "#00A67E",
+        "#005FCC",
+
+        // Connected
+        [
+          "==",
+          ["downcase", ["get", "Does the library currently have Internet access?"]],
+          "yes",
+        ],
+        "#3ED892",
+
+        // Not connected
+        [
+          "==",
+          ["downcase", ["get", "Does the library currently have Internet access?"]],
+          "no",
+        ],
+        "#F82055",
+
+        // Unknown (default)
+        "#20BBCE",
       ],
-      "circle-stroke-width": [
-        "case",
-        ["boolean", ["feature-state", "hover"], false],
-        2,
-        1,
-      ],
+
       "circle-stroke-color": "#FFFFFF",
+      "circle-stroke-width": 1.5,
       "circle-opacity": 1,
     },
   },
 };
+
 
 export const MAP_STYLES = {
   light: "mapbox://styles/mapbox/light-v11",
