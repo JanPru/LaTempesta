@@ -5,6 +5,7 @@ import Papa from "papaparse";
 
 import MenuLateral from "../components/MenuLateral";
 import LibraryInfoPopup from "../components/LibraryInfoPopup";
+import MapLegend from "../components/MapLegend";
 
 export default function MapPage() {
   const mapRef = useRef(null);
@@ -24,12 +25,14 @@ export default function MapPage() {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
 
-  // ✅ stats globals i stats del país seleccionat
   const [globalStats, setGlobalStats] = useState({
     totalPoints: 0,
     connectivityMapped: 0,
     downloadMeasured: 0,
     goodDownload: 0,
+    dlRed: 0,
+    dlOrange: 0,
+    dlGreen: 0,
   });
 
   const [countryStats, setCountryStats] = useState({
@@ -37,9 +40,13 @@ export default function MapPage() {
     connectivityMapped: 0,
     downloadMeasured: 0,
     goodDownload: 0,
+    dlRed: 0,
+    dlOrange: 0,
+    dlGreen: 0,
   });
 
   const [countryBBoxes, setCountryBBoxes] = useState(null);
+  const [countriesGeojson, setCountriesGeojson] = useState(null);
 
   const initialViewState = useMemo(
     () => ({
@@ -59,7 +66,6 @@ export default function MapPage() {
       .toLowerCase()
       .trim();
 
-  // 🔎 Detectar país del CSV de forma robusta
   const extractCountryFromProps = (props) => {
     const keys = [
       "country",
@@ -80,7 +86,6 @@ export default function MapPage() {
     return "";
   };
 
-  // 🔎 Heurístiques per trobar camps de connectivitat i download
   const hasConnectivityInfo = (props) => {
     if (!props) return false;
     for (const [k, v] of Object.entries(props)) {
@@ -92,29 +97,48 @@ export default function MapPage() {
         key.includes("wifi")
       ) {
         const s = String(v ?? "").trim();
-        if (s && s.toLowerCase() !== "na" && s.toLowerCase() !== "n/a") return true;
+        if (s && s.toLowerCase() !== "na" && s.toLowerCase() !== "n/a")
+          return true;
       }
     }
     return false;
   };
 
-  const getDownloadSpeed = (props) => {
-    if (!props) return null;
+  const getDownloadBucket = (props) => {
+    const raw =
+      props?.[
+        "What is the average Internet/download speed available at the library?"
+      ];
+    const v = String(raw ?? "")
+      .toLowerCase()
+      .replace(/[–—]/g, "-")
+      .trim();
 
-    // Busquem un camp que sembli download/speed/mbps
-    for (const [k, v] of Object.entries(props)) {
-      const key = String(k).toLowerCase();
-      if (
-        key.includes("download") &&
-        (key.includes("speed") || key.includes("mbps") || key.includes("rate"))
-      ) {
-        const num = Number(v);
-        if (Number.isFinite(num)) return num;
-      }
-      if (key.includes("dl") && key.includes("mbps")) {
-        const num = Number(v);
-        if (Number.isFinite(num)) return num;
-      }
+    if (!v) return null;
+
+    if (
+      v.includes("less than 1") ||
+      v.includes("between 1-5") ||
+      v.includes("1-5") ||
+      v.includes("less than 5")
+    ) {
+      return "red";
+    }
+    if (
+      v.includes("between 5-20") ||
+      v.includes("5-20") ||
+      v.includes("between 20-40") ||
+      v.includes("20-40")
+    ) {
+      return "orange";
+    }
+    if (
+      v.includes("between 40-100") ||
+      v.includes("40-100") ||
+      v.includes("more than 100") ||
+      v.includes(">100")
+    ) {
+      return "green";
     }
     return null;
   };
@@ -124,26 +148,34 @@ export default function MapPage() {
 
     let connectivityMapped = 0;
     let downloadMeasured = 0;
-    let goodDownload = 0;
-
-    // Llindar “good download” (ajustable)
-    const GOOD_DL_MBPS = 10;
+    let dlRed = 0;
+    let dlOrange = 0;
+    let dlGreen = 0;
 
     for (const f of features) {
       const props = f.properties || {};
       if (hasConnectivityInfo(props)) connectivityMapped++;
 
-      const dl = getDownloadSpeed(props);
-      if (dl !== null) {
+      const bucket = getDownloadBucket(props);
+      if (bucket) {
         downloadMeasured++;
-        if (dl >= GOOD_DL_MBPS) goodDownload++;
+        if (bucket === "red") dlRed++;
+        else if (bucket === "orange") dlOrange++;
+        else if (bucket === "green") dlGreen++;
       }
     }
 
-    return { totalPoints, connectivityMapped, downloadMeasured, goodDownload };
+    return {
+      totalPoints,
+      connectivityMapped,
+      downloadMeasured,
+      goodDownload: dlGreen,
+      dlRed,
+      dlOrange,
+      dlGreen,
+    };
   };
 
-  // Compute bbox for country geojson feature
   const computeBBox = (geometry) => {
     const coords = [];
     const walk = (c) => {
@@ -173,7 +205,6 @@ export default function MapPage() {
     ];
   };
 
-  // ✅ Carrega bboxes reals de països (per fer fitBounds a país sencer)
   useEffect(() => {
     const loadCountriesGeo = async () => {
       try {
@@ -183,6 +214,7 @@ export default function MapPage() {
         if (!res.ok) throw new Error("No puc carregar el geojson de països");
 
         const gj = await res.json();
+        setCountriesGeojson(gj);
 
         const index = {};
         for (const f of gj.features || []) {
@@ -200,6 +232,7 @@ export default function MapPage() {
         setCountryBBoxes(index);
       } catch {
         setCountryBBoxes(null);
+        setCountriesGeojson(null);
       }
     };
 
@@ -209,9 +242,10 @@ export default function MapPage() {
   const onMouseEnter = useCallback(
     (e) => {
       if (!e.features || !e.features.length) return;
-      const feature = e.features[0];
 
-      // neteja hover anterior
+      const f = e.features[0];
+      if (f?.layer?.id !== LAYER_CONFIG.points.id) return;
+
       if (hoveredFeature && mapRef.current) {
         mapRef.current.getMap().setFeatureState(
           { source: "libraries-source", id: hoveredFeature.id },
@@ -219,11 +253,11 @@ export default function MapPage() {
         );
       }
 
-      setHoveredFeature(feature);
+      setHoveredFeature(f);
 
       if (mapRef.current) {
         mapRef.current.getMap().setFeatureState(
-          { source: "libraries-source", id: feature.id },
+          { source: "libraries-source", id: f.id },
           { hover: true }
         );
       }
@@ -241,38 +275,100 @@ export default function MapPage() {
     setHoveredFeature(null);
   }, [hoveredFeature]);
 
-  // Click: selecciona biblioteca + fly suau (sense zoom exagerat)
-const onClick = useCallback((e) => {
-  if (!e.features || !e.features.length || !mapRef.current) return;
+  const handleSelectCountry = useCallback(
+    (country) => {
+      setSelectedCountry(country);
 
-  const feature = e.features[0];
-  setSelectedFeature(feature);
+      if (!fullGeojson) return;
 
-  const map = mapRef.current.getMap();
-  const [lon, lat] = feature.geometry.coordinates;
+      if (!country || country === "Worldwide") {
+        setGeojson(fullGeojson);
+        setCountryStats(globalStats);
 
-  const currentZoom = map.getZoom();
+        if (mapRef.current && fullGeojson.features.length) {
+          const bounds = fullGeojson.features.reduce(
+            (acc, f) => {
+              const [lon, lat] = f.geometry.coordinates;
+              return [
+                [Math.min(acc[0][0], lon), Math.min(acc[0][1], lat)],
+                [Math.max(acc[1][0], lon), Math.max(acc[1][1], lat)],
+              ];
+            },
+            [[Infinity, Infinity], [-Infinity, -Infinity]]
+          );
 
-  // ✅ zoom suau, sense passar-nos
-  const TARGET_ZOOM = 6.5; // zoom “agradable” per biblioteca
-  const MAX_ZOOM = 8;     // límit dur
-  const MIN_ZOOM = 4.5;   // si estàs molt lluny, assegura focus
+          mapRef.current.getMap().fitBounds(bounds, {
+            padding: {
+              top: 80,
+              bottom: 80,
+              left: menuOpen ? 420 : 60,
+              right: 60,
+            },
+            duration: 800,
+            maxZoom: 3.5,
+          });
+        }
+        return;
+      }
 
-  const nextZoom = Math.max(
-    MIN_ZOOM,
-    Math.min(MAX_ZOOM, Math.max(currentZoom, TARGET_ZOOM))
+      const n = normalize(country);
+      const filteredFeatures = fullGeojson.features.filter(
+        (f) => normalize(f.properties?.__country) === n
+      );
+
+      setGeojson({ type: "FeatureCollection", features: filteredFeatures });
+      setCountryStats(computeStatsFromFeatures(filteredFeatures));
+
+      if (mapRef.current && countryBBoxes) {
+        const bbox = countryBBoxes[n];
+        if (bbox) {
+          mapRef.current.getMap().fitBounds(bbox, {
+            padding: {
+              top: 90,
+              bottom: 90,
+              left: menuOpen ? 420 : 60,
+              right: 80,
+            },
+            duration: 800,
+            maxZoom: 5.0,
+          });
+        }
+      }
+    },
+    [fullGeojson, countryBBoxes, globalStats, menuOpen]
   );
 
-  map.flyTo({
-    center: [lon, lat],
-    zoom: nextZoom,
-    duration: 600,
-    essential: true,
-  });
-}, []);
+  const onClick = useCallback(
+    (e) => {
+      if (!e.features || e.features.length === 0) {
+        setSelectedFeature(null);
+        handleSelectCountry("Worldwide");
+        return;
+      }
 
+      const pointHit = e.features.find(
+        (f) => f?.layer?.id === LAYER_CONFIG.points.id
+      );
+      if (pointHit) {
+        setSelectedFeature(pointHit);
 
-  // ✅ Carrega CSV
+        const clickedCountry = pointHit?.properties?.__country;
+        handleSelectCountry(clickedCountry || "Worldwide");
+        return;
+      }
+
+      const countryHit = e.features.find(
+        (f) => f?.layer?.id === COUNTRY_LAYER.fill.id
+      );
+      if (countryHit) {
+        setSelectedFeature(null);
+        const countryName = countryHit?.properties?.name;
+        if (countryName) handleSelectCountry(countryName);
+      }
+    },
+    [handleSelectCountry]
+  );
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -326,7 +422,6 @@ const onClick = useCallback((e) => {
 
         setCountries(Array.from(countrySet));
 
-        // Fit inicial a tots (sense exagerar)
         setTimeout(() => {
           if (!features.length || !mapRef.current) return;
 
@@ -342,7 +437,12 @@ const onClick = useCallback((e) => {
           );
 
           mapRef.current.getMap().fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+            padding: {
+              top: 80,
+              bottom: 80,
+              left: menuOpen ? 420 : 60,
+              right: 60,
+            },
             duration: 800,
             maxZoom: 3.5,
           });
@@ -356,90 +456,28 @@ const onClick = useCallback((e) => {
     };
 
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cursor pointer on hover
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current.getMap();
 
-    map.on("mouseenter", LAYER_CONFIG.points.id, () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", LAYER_CONFIG.points.id, () => {
-      map.getCanvas().style.cursor = "";
-    });
+    const onEnter = () => (map.getCanvas().style.cursor = "pointer");
+    const onLeave = () => (map.getCanvas().style.cursor = "");
+
+    map.on("mouseenter", LAYER_CONFIG.points.id, onEnter);
+    map.on("mouseleave", LAYER_CONFIG.points.id, onLeave);
+
+    map.on("mouseenter", COUNTRY_LAYER.fill.id, onEnter);
+    map.on("mouseleave", COUNTRY_LAYER.fill.id, onLeave);
 
     return () => {
-      map.off("mouseenter", LAYER_CONFIG.points.id, () => {});
-      map.off("mouseleave", LAYER_CONFIG.points.id, () => {});
+      map.off("mouseenter", LAYER_CONFIG.points.id, onEnter);
+      map.off("mouseleave", LAYER_CONFIG.points.id, onLeave);
+      map.off("mouseenter", COUNTRY_LAYER.fill.id, onEnter);
+      map.off("mouseleave", COUNTRY_LAYER.fill.id, onLeave);
     };
   }, [geojson]);
-
-  // ✅ Quan selecciones país:
-  // - canvia punts (només país)
-  // - canvia stats cards (només país)
-  // - fa fitBounds al bbox real país
-  const handleSelectCountry = useCallback(
-    (country) => {
-      setSelectedCountry(country);
-      setSelectedFeature(null);
-
-      if (!fullGeojson) return;
-
-      // Worldwide
-      if (!country || country === "Worldwide") {
-        setGeojson(fullGeojson);
-        setCountryStats(globalStats);
-
-        // Fit global (suau)
-        if (mapRef.current && fullGeojson.features.length) {
-          const bounds = fullGeojson.features.reduce(
-            (acc, f) => {
-              const [lon, lat] = f.geometry.coordinates;
-              return [
-                [Math.min(acc[0][0], lon), Math.min(acc[0][1], lat)],
-                [Math.max(acc[1][0], lon), Math.max(acc[1][1], lat)],
-              ];
-            },
-            [[Infinity, Infinity], [-Infinity, -Infinity]]
-          );
-
-          mapRef.current.getMap().fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
-            duration: 800,
-            maxZoom: 3.5,
-          });
-        }
-        return;
-      }
-
-      // Filtra punts per país
-      const n = normalize(country);
-      const filteredFeatures = fullGeojson.features.filter(
-        (f) => normalize(f.properties?.__country) === n
-      );
-
-      setGeojson({ type: "FeatureCollection", features: filteredFeatures });
-
-      // Stats del país
-      setCountryStats(computeStatsFromFeatures(filteredFeatures));
-
-      // Fit bbox real del país (no punts)
-      if (mapRef.current && countryBBoxes) {
-        const bbox = countryBBoxes[n];
-        if (bbox) {
-          mapRef.current.getMap().fitBounds(bbox, {
-            padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
-            duration: 800,
-            maxZoom: 5.0,
-          });
-        }
-      }
-    },
-    [fullGeojson, countryBBoxes, globalStats, menuOpen]
-  );
 
   return (
     <div
@@ -455,10 +493,13 @@ const onClick = useCallback((e) => {
       <MenuLateral
         isLoading={isLoading}
         isOpen={menuOpen}
-        onToggle={() => setMenuOpen((v) => !v)}   // ✅ toggle
+        onToggle={() => setMenuOpen((v) => !v)}
         countries={countries}
         selectedCountry={selectedCountry}
-        onSelectCountry={handleSelectCountry}
+        onSelectCountry={(c) => {
+          setSelectedFeature(null);
+          handleSelectCountry(c);
+        }}
         countriesCount={countries.length}
         stats={countryStats}
       />
@@ -487,23 +528,36 @@ const onClick = useCallback((e) => {
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
         mapStyle={MAP_STYLES[mapStyle]}
         projection="mercator"
-        style={{
-          width: "100%",
-          height: "100%",
-          //filter: "grayscale(100%) brightness(1.1) contrast(0.9)",
-        }}
-        interactiveLayerIds={[LAYER_CONFIG.points.id]}
+        style={{ width: "100%", height: "100%" }}
+        interactiveLayerIds={[LAYER_CONFIG.points.id, COUNTRY_LAYER.fill.id]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
       >
-        {geojson && (
-          <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
-            <Layer {...LAYER_CONFIG.points} />
+        {countriesGeojson && (
+          <Source id="countries-source" type="geojson" data={countriesGeojson}>
+            <Layer {...COUNTRY_LAYER.fill} />
+            <Layer {...COUNTRY_LAYER.outline} />
           </Source>
         )}
 
-        {/* ✅ Component reusable: Pin + pestanya info */}
+        {geojson && (
+          <Source
+            id="libraries-source"
+            type="geojson"
+            data={geojson}
+            promoteId="id"
+          >
+            {/* ✅ PUNTS (i aquí posem halo per sota via beforeId) */}
+            <Layer {...LAYER_CONFIG.points} />
+
+            {/* ✅ HALO sota punts: beforeId = id dels punts */}
+            {selectedCountry !== "Worldwide" && (
+              <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
+            )}
+          </Source>
+        )}
+
         {selectedFeature && (
           <LibraryInfoPopup
             feature={selectedFeature}
@@ -512,6 +566,9 @@ const onClick = useCallback((e) => {
           />
         )}
       </Map>
+
+      {/* ✅ LLEGENDA (AQUÍ EXACTE, fora del <Map>) */}
+      <MapLegend />
     </div>
   );
 }
@@ -522,23 +579,18 @@ export const LAYER_CONFIG = {
     type: "circle",
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 3, 5, 5, 10, 8],
-
       "circle-color": [
         "case",
-
-        // Hover highlight
         ["boolean", ["feature-state", "hover"], false],
         "#005FCC",
 
-        // Connected
         [
           "==",
           ["downcase", ["get", "Does the library currently have Internet access?"]],
           "yes",
         ],
-        "#3ED892",
+        "#3ED896",
 
-        // Not connected
         [
           "==",
           ["downcase", ["get", "Does the library currently have Internet access?"]],
@@ -546,17 +598,87 @@ export const LAYER_CONFIG = {
         ],
         "#F82055",
 
-        // Unknown (default)
         "#20BBCE",
       ],
-
       "circle-stroke-color": "#FFFFFF",
       "circle-stroke-width": 1.5,
       "circle-opacity": 1,
     },
   },
+
+  halo: {
+    id: "library-halo",
+    type: "circle",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 6, 5, 10.5, 10, 14],
+      "circle-color": [
+        "case",
+
+        [
+          "any",
+          [
+            "in",
+            "less than 1",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+          [
+            "in",
+            "between 1-5",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+        ],
+        "#F82055",
+
+        [
+          "any",
+          [
+            "in",
+            "between 5-20",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+          [
+            "in",
+            "between 20-40",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+        ],
+        "#FDB900",
+
+        [
+          "any",
+          [
+            "in",
+            "between 40-100",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+          [
+            "in",
+            "more than 100",
+            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
+          ],
+        ],
+        "#3ED896",
+
+        "#20BBCE",
+      ],
+      "circle-opacity": 0.5,
+      "circle-stroke-width": 0,
+    },
+  },
 };
 
+export const COUNTRY_LAYER = {
+  fill: {
+    id: "countries-fill",
+    type: "fill",
+    paint: { "fill-color": "#000000", "fill-opacity": 0.01 },
+  },
+  outline: {
+    id: "countries-outline",
+    type: "line",
+    paint: { "line-color": "#000000", "line-opacity": 0.08, "line-width": 1 },
+  },
+};
 
 export const MAP_STYLES = {
   light: "mapbox://styles/mapbox/light-v11",

@@ -281,7 +281,7 @@ export default function MenuLateral({
             progressBar={
               s.totalPoints
                 ? {
-                    colors: ["#0F6641", "#E0E0E0"],
+                    colors: ["#3ED896", "#E0E0E0"],
                     widths: [
                       (s.connectivityMapped / s.totalPoints) * 100,
                       100 - (s.connectivityMapped / s.totalPoints) * 100,
@@ -303,17 +303,14 @@ export default function MenuLateral({
                 : "No download data detected"
             }
             hasInfo={true}
-            progressBar={
-              s.downloadMeasured
-                ? {
-                    colors: ["#0F6641", "#E0E0E0"],
-                    widths: [
-                      (s.goodDownload / s.downloadMeasured) * 100,
-                      100 - (s.goodDownload / s.downloadMeasured) * 100,
-                    ],
-                  }
-                : null
-            }
+            progressBar={{
+              colors: ["#F82055", "#F9A825", "#3ED896"],
+              widths: [
+               (s.dlRed / s.downloadMeasured) * 100,
+                (s.dlOrange / s.downloadMeasured) * 100,
+                (s.dlGreen / s.downloadMeasured) * 100,
+              ],
+            }} 
           />
         </div>
 
