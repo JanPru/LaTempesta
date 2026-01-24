@@ -1,4 +1,4 @@
-// MapPage.jsx
+// src/pages/MapPage.jsx
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Map, { Source, Layer, Marker } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -7,6 +7,7 @@ import Papa from "papaparse";
 import MenuLateral from "../components/MenuLateral";
 import LibraryInfoPopup from "../components/LibraryInfoPopup";
 import MapLegend from "../components/MapLegend";
+import TopBrand from "../components/TopBrand";
 
 export default function MapPage() {
   const mapRef = useRef(null);
@@ -101,8 +102,7 @@ export default function MapPage() {
         key.includes("wifi")
       ) {
         const s = String(v ?? "").trim();
-        if (s && s.toLowerCase() !== "na" && s.toLowerCase() !== "n/a")
-          return true;
+        if (s && s.toLowerCase() !== "na" && s.toLowerCase() !== "n/a") return true;
       }
     }
     return false;
@@ -111,9 +111,7 @@ export default function MapPage() {
   // ✅ bucket robust (JS) -> després Mapbox només fa "match" (no peta mai)
   const getDownloadBucket = (props) => {
     const raw =
-      props?.[
-        "What is the average Internet/download speed available at the library?"
-      ];
+      props?.["What is the average Internet/download speed available at the library?"];
 
     const v = String(raw ?? "")
       .toLowerCase()
@@ -223,17 +221,10 @@ export default function MapPage() {
   // ✅ helper: cercle “radius” segons la teva expressió del layer (interpolate zoom)
   const circleRadiusForZoom = (z) => {
     if (!Number.isFinite(z)) return 5;
-
     if (z <= 0) return 3;
 
-    if (z > 0 && z < 5) {
-      return 3 + ((z - 0) * (5 - 3)) / (5 - 0);
-    }
-
-    if (z >= 5 && z < 10) {
-      return 5 + ((z - 5) * (8 - 5)) / (10 - 5);
-    }
-
+    if (z > 0 && z < 5) return 3 + ((z - 0) * (5 - 3)) / (5 - 0);
+    if (z >= 5 && z < 10) return 5 + ((z - 5) * (8 - 5)) / (10 - 5);
     return 8;
   };
 
@@ -290,19 +281,17 @@ export default function MapPage() {
       if (f?.source !== "libraries-source") return;
 
       if (hoveredFeature && mapRef.current) {
-        mapRef.current.getMap().setFeatureState(
-          { source: "libraries-source", id: hoveredFeature.id },
-          { hover: false }
-        );
+        mapRef.current
+          .getMap()
+          .setFeatureState({ source: "libraries-source", id: hoveredFeature.id }, { hover: false });
       }
 
       setHoveredFeature(f);
 
       if (mapRef.current) {
-        mapRef.current.getMap().setFeatureState(
-          { source: "libraries-source", id: f.id },
-          { hover: true }
-        );
+        mapRef.current
+          .getMap()
+          .setFeatureState({ source: "libraries-source", id: f.id }, { hover: true });
       }
     },
     [hoveredFeature]
@@ -310,10 +299,9 @@ export default function MapPage() {
 
   const onMouseLeave = useCallback(() => {
     if (hoveredFeature && mapRef.current) {
-      mapRef.current.getMap().setFeatureState(
-        { source: "libraries-source", id: hoveredFeature.id },
-        { hover: false }
-      );
+      mapRef.current
+        .getMap()
+        .setFeatureState({ source: "libraries-source", id: hoveredFeature.id }, { hover: false });
     }
     setHoveredFeature(null);
   }, [hoveredFeature]);
@@ -404,9 +392,7 @@ export default function MapPage() {
         return;
       }
 
-      const countryHit = e.features.find(
-        (f) => f?.layer?.id === COUNTRY_LAYER.fill.id
-      );
+      const countryHit = e.features.find((f) => f?.layer?.id === COUNTRY_LAYER.fill.id);
       if (countryHit) {
         setSelectedFeature(null);
         const countryName = countryHit?.properties?.name;
@@ -576,6 +562,9 @@ export default function MapPage() {
         selectedLibrary={selectedLibrary}
       />
 
+      {/* ✅ TOP BRAND (resize-proof dins del component) */}
+      <TopBrand menuOpen={false} />
+
       {error && (
         <div
           style={{
@@ -618,12 +607,7 @@ export default function MapPage() {
         )}
 
         {geojson && (
-          <Source
-            id="libraries-source"
-            type="geojson"
-            data={geojson}
-            promoteId="id"
-          >
+          <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
             {/* ✅ PUNTS: amaguem el seleccionat perquè ara es veurà com a pin */}
             <Layer
               {...LAYER_CONFIG.points}
@@ -707,43 +691,35 @@ export const LAYER_CONFIG = {
 
   // ✅ FIX: halo usa bucket precalculat i fallback blau
   halo: {
-  id: "library-halo",
-  type: "circle",
-  paint: {
-    "circle-radius": [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      0, 6,
-      5, 10.5,
-      10, 14
-    ],
+    id: "library-halo",
+    type: "circle",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 6, 5, 10.5, 10, 14],
 
-    // ❌ NO HALO si Not connected
-    "circle-opacity": [
-      "case",
-      [
-        "==",
-        ["downcase", ["get", "Does the library currently have Internet access?"]],
-        "no"
+      // ❌ NO HALO si Not connected
+      "circle-opacity": [
+        "case",
+        ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "no"],
+        0,
+        0.5,
       ],
-      0,
-      0.5
-    ],
 
-    // 🎨 color segons bucket (ja arreglat)
-    "circle-color": [
-      "match",
-      ["get", "__dlBucket"],
-      "red", "#F82055",
-      "orange", "#FDB900",
-      "green", "#3ED896",
-      "#20BBCE" // unknown
-    ],
+      // 🎨 color segons bucket (ja arreglat)
+      "circle-color": [
+        "match",
+        ["get", "__dlBucket"],
+        "red",
+        "#F82055",
+        "orange",
+        "#FDB900",
+        "green",
+        "#3ED896",
+        "#20BBCE", // unknown
+      ],
 
-    "circle-stroke-width": 0
-  }
-}
+      "circle-stroke-width": 0,
+    },
+  },
 };
 
 export const COUNTRY_LAYER = {

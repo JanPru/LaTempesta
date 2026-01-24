@@ -1,3 +1,4 @@
+// src/components/Topbar.jsx
 import { useState, useEffect } from "react";
 
 // The Topbar component renders a responsive header and navigation menu.
@@ -32,28 +33,28 @@ export default function Topbar() {
     if (menuOpen && isMobile) {
       // Guardar la posició actual del scroll
       const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
+      document.body.style.position = "fixed";
       document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
     } else {
       // Restaurar el scroll
       const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
       if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
       }
     }
 
     // Cleanup al desmuntar
     return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
     };
   }, [menuOpen, isMobile]);
 
@@ -65,21 +66,66 @@ export default function Topbar() {
   // arrow remains separate so the layout stays unchanged.
   const NavLinks = ({ mobile = false }) => (
     <>
-      <a href="#about" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>About</a>
-      <a href="#impact" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>Impact</a>
-      <a href="#resources" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>Resources</a>
-      <a href="#faqs" style={mobile ? styles.mobileNavLink : styles.navLink} onClick={mobile ? toggleMenu : undefined}>FAQs</a>
+      <a
+        href="#about"
+        style={mobile ? styles.mobileNavLink : styles.navLink}
+        onClick={mobile ? toggleMenu : undefined}
+      >
+        About
+      </a>
+      <a
+        href="#impact"
+        style={mobile ? styles.mobileNavLink : styles.navLink}
+        onClick={mobile ? toggleMenu : undefined}
+      >
+        Impact
+      </a>
+      <a
+        href="#resources"
+        style={mobile ? styles.mobileNavLink : styles.navLink}
+        onClick={mobile ? toggleMenu : undefined}
+      >
+        Resources
+      </a>
+      <a
+        href="#faqs"
+        style={mobile ? styles.mobileNavLink : styles.navLink}
+        onClick={mobile ? toggleMenu : undefined}
+      >
+        FAQs
+      </a>
+
       {/* The map link is styled separately to keep the brand colour. */}
       {mobile ? (
-        <a href="/map" style={{ ...styles.mobileNavLink, ...styles.navLinkRed, display: "flex", alignItems: "center", gap: "8px" }} onClick={toggleMenu}>
+        <a
+          href="/map"
+          style={{
+            ...styles.mobileNavLink,
+            ...styles.navLinkRed,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+          onClick={toggleMenu}
+        >
           Explore LBC Map
-          <img src="/img/Icon core-arrow-circle-right.png" alt="Arrow" style={styles.arrowIcon} />
+          <img
+            src="/img/Icon core-arrow-circle-right.png"
+            alt="Arrow"
+            style={styles.arrowIcon}
+          />
         </a>
       ) : (
         <>
-          <a href="/map" style={styles.navLinkRed}>Explore LBC Map</a>
+          <a href="/map" style={styles.navLinkRed}>
+            Explore LBC Map
+          </a>
           <a href="/map" style={styles.arrowButton}>
-            <img src="/img/Icon core-arrow-circle-right.png" alt="Arrow" style={styles.arrowIcon} />
+            <img
+              src="/img/Icon core-arrow-circle-right.png"
+              alt="Arrow"
+              style={styles.arrowIcon}
+            />
           </a>
         </>
       )}
@@ -89,38 +135,25 @@ export default function Topbar() {
   return (
     <header style={styles.header}>
       <div style={styles.container}>
-        {/* Logo */}
-        <div style={styles.logoContainer}>
-          {/* Rectangle logo */}
-          <div style={styles.logoBox}>
-            <svg width="38" height="38" viewBox="0 0 38 38">
-              <rect width="38" height="38" fill="#0F6641" rx="2" />
-              <text
-                x="19"
-                y="24"
-                textAnchor="middle"
-                fill="#FFFFFF"
-                fontSize="16"
-                fontWeight="bold"
-                fontFamily="Noto Sans, Arial, sans-serif"
-              >
-                LBC
-              </text>
-            </svg>
+        {/* ✅ BRAND (igual que TopBrand d'abans) */}
+        <a
+          href="/"
+          aria-label="Go to home"
+          style={styles.brandLink}
+        >
+          {/* Quadrat verd LBC */}
+          <div style={styles.brandSquare}>
+            <span style={styles.brandSquareText}>LBC</span>
           </div>
 
-          {/* Logo text image */}
-          <div style={styles.logoTextImage}>
-            <img
-              src="/img/Libraries Boosting Connectivity.png"
-              alt="Libraries Boosting Connectivity"
-              style={styles.logoImage}
-            />
+          {/* Text en 2 línies */}
+          <div style={styles.brandTextBlock}>
+            <div style={styles.brandLine}>Libraries</div>
+            <div style={styles.brandLine}>Boosting Connectivity</div>
           </div>
-        </div>
+        </a>
 
         {/* Navigation */}
-        {/* Mobile view: show hamburger icon and conditional menu */}
         {isMobile ? (
           <div style={{ display: "flex", alignItems: "center" }}>
             {/* Hamburger button */}
@@ -133,6 +166,7 @@ export default function Topbar() {
               <span style={styles.hamburgerLine}></span>
               <span style={styles.hamburgerLine}></span>
             </button>
+
             {/* Conditionally rendered mobile nav */}
             {menuOpen && (
               <nav style={styles.mobileNav}>
@@ -171,33 +205,45 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
   },
-  logoContainer: {
+
+  /* ✅ Brand igual que TopBrand d'abans */
+  brandLink: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    height: "38px",
-  },
-  logoBox: {
-    width: "38px",
-    height: "38px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    gap: 10,
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
+    textDecoration: "none",
     flexShrink: 0,
   },
-  logoTextImage: {
-    width: "200px",
-    height: "38px",
-    display: "flex",
-    alignItems: "center",
+  brandSquare: {
+    width: 44,
+    height: 44,
+    borderRadius: 2,
+    background: "#0F6641",
+    display: "grid",
+    placeItems: "center",
     flexShrink: 0,
   },
-  logoImage: {
-    width: "100%",
-    height: "auto",
-    objectFit: "contain",
-    opacity: 1,
+  brandSquareText: {
+    font: "normal normal bold 16px/16px Noto Sans",
+    color: "#FFFFFF",
+    letterSpacing: "0.5px",
+    transform: "translateY(1px)",
   },
+  brandTextBlock: {
+    lineHeight: 1.05,
+    textAlign: "left",
+    alignItems: "flex-start",
+  },
+  brandLine: {
+    font: "normal normal bold 16px/18px Noto Sans",
+    color: "#0F6641",
+    whiteSpace: "nowrap",
+  },
+
   nav: {
     display: "flex",
     alignItems: "center",
@@ -241,6 +287,7 @@ const styles = {
     height: "16px",
     opacity: 1,
   },
+
   // Mobile-specific styles
   hamburgerButton: {
     display: "flex",
