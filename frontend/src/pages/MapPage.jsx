@@ -338,6 +338,12 @@ export default function MapPage() {
     [fullGeojson, countryBBoxes, globalStats, menuOpen]
   );
 
+  // ✅ selectedLibrary: només passem properties (type es calcula dins component)
+  const selectedLibrary = useMemo(() => {
+    if (!selectedFeature) return null;
+    return { properties: selectedFeature.properties || {} };
+  }, [selectedFeature]);
+
   const onClick = useCallback(
     (e) => {
       if (!e.features || e.features.length === 0) {
@@ -346,9 +352,7 @@ export default function MapPage() {
         return;
       }
 
-      const pointHit = e.features.find(
-        (f) => f?.layer?.id === LAYER_CONFIG.points.id
-      );
+      const pointHit = e.features.find((f) => f?.layer?.id === LAYER_CONFIG.points.id);
       if (pointHit) {
         setSelectedFeature(pointHit);
 
@@ -357,9 +361,7 @@ export default function MapPage() {
         return;
       }
 
-      const countryHit = e.features.find(
-        (f) => f?.layer?.id === COUNTRY_LAYER.fill.id
-      );
+      const countryHit = e.features.find((f) => f?.layer?.id === COUNTRY_LAYER.fill.id);
       if (countryHit) {
         setSelectedFeature(null);
         const countryName = countryHit?.properties?.name;
@@ -456,7 +458,7 @@ export default function MapPage() {
     };
 
     load();
-  }, []);
+  }, []); // tal qual
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -493,7 +495,7 @@ export default function MapPage() {
       <MenuLateral
         isLoading={isLoading}
         isOpen={menuOpen}
-        onToggle={() => setMenuOpen((v) => !v)}
+        onClose={() => setMenuOpen((v) => !v)}
         countries={countries}
         selectedCountry={selectedCountry}
         onSelectCountry={(c) => {
@@ -502,6 +504,7 @@ export default function MapPage() {
         }}
         countriesCount={countries.length}
         stats={countryStats}
+        selectedLibrary={selectedLibrary}
       />
 
       {error && (
@@ -542,16 +545,8 @@ export default function MapPage() {
         )}
 
         {geojson && (
-          <Source
-            id="libraries-source"
-            type="geojson"
-            data={geojson}
-            promoteId="id"
-          >
-            {/* ✅ PUNTS (i aquí posem halo per sota via beforeId) */}
+          <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
             <Layer {...LAYER_CONFIG.points} />
-
-            {/* ✅ HALO sota punts: beforeId = id dels punts */}
             {selectedCountry !== "Worldwide" && (
               <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
             )}
@@ -567,7 +562,6 @@ export default function MapPage() {
         )}
       </Map>
 
-      {/* ✅ LLEGENDA (AQUÍ EXACTE, fora del <Map>) */}
       <MapLegend />
     </div>
   );
@@ -584,18 +578,10 @@ export const LAYER_CONFIG = {
         ["boolean", ["feature-state", "hover"], false],
         "#005FCC",
 
-        [
-          "==",
-          ["downcase", ["get", "Does the library currently have Internet access?"]],
-          "yes",
-        ],
+        ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "yes"],
         "#3ED896",
 
-        [
-          "==",
-          ["downcase", ["get", "Does the library currently have Internet access?"]],
-          "no",
-        ],
+        ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "no"],
         "#F82055",
 
         "#20BBCE",
@@ -616,46 +602,22 @@ export const LAYER_CONFIG = {
 
         [
           "any",
-          [
-            "in",
-            "less than 1",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
-          [
-            "in",
-            "between 1-5",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
+          ["in", "less than 1", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
+          ["in", "between 1-5", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
         ],
         "#F82055",
 
         [
           "any",
-          [
-            "in",
-            "between 5-20",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
-          [
-            "in",
-            "between 20-40",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
+          ["in", "between 5-20", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
+          ["in", "between 20-40", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
         ],
         "#FDB900",
 
         [
           "any",
-          [
-            "in",
-            "between 40-100",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
-          [
-            "in",
-            "more than 100",
-            ["downcase", ["get", "What is the average Internet/download speed available at the library?"]],
-          ],
+          ["in", "between 40-100", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
+          ["in", "more than 100", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
         ],
         "#3ED896",
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import FilterHeader from "./FilterHeader";
 import InfoCard from "./InfoCard";
 import BottomFilters from "./BottomFilters";
+import LibraryDetailsPanel from "./LibraryDetailsPanel";
 
 /*
  * MenuLateral (FINAL)
@@ -12,7 +13,7 @@ import BottomFilters from "./BottomFilters";
 export default function MenuLateral({
   isLoading,
   isOpen,
-  onClose, // (we'll still use it, but name is generic)
+  onClose,
 
   countries = [],
   selectedCountry = "Worldwide",
@@ -20,6 +21,9 @@ export default function MenuLateral({
 
   countriesCount = 0,
   stats,
+
+  // ✅ NEW: biblioteca seleccionada (objecte amb properties)
+  selectedLibrary,
 }) {
   const [filters] = useState({
     country: "Country",
@@ -33,6 +37,9 @@ export default function MenuLateral({
     connectivityMapped: 0,
     downloadMeasured: 0,
     goodDownload: 0,
+    dlRed: 0,
+    dlOrange: 0,
+    dlGreen: 0,
   };
 
   // ===========
@@ -41,31 +48,35 @@ export default function MenuLateral({
   const PANEL_WIDTH_REM = 22.5; // 22.5rem
   const TAB_WIDTH_REM = 1.125;  // 1.125rem
 
+  // Default cards layout
   const INFOCARDS_TOP = "35.64%";
   const INFOCARDS_GAP_REM = 1.25;
   const INFOCARD_HEIGHT_REM = 6.2;
   const INFOCARDS_COUNT = 3;
   const AFTER_CARDS_MARGIN_REM = 8.0;
 
-  const bottomFiltersTop = `calc(
-    ${INFOCARDS_TOP} +
-    (${INFOCARDS_COUNT} * ${INFOCARD_HEIGHT_REM}rem) +
-    (${INFOCARDS_COUNT - 1} * ${INFOCARDS_GAP_REM}rem) +
-    ${AFTER_CARDS_MARGIN_REM}rem
-  )`;
+  // Library details layout
+  const LIB_DETAILS_TOP = "16.2%";
+  const LIB_DETAILS_ESTIMATED_HEIGHT_REM = 28; // espai “segur”
+  const AFTER_LIB_MARGIN_REM = 5;
 
-  // ✅ Wrapper never moves → tab can stay visible
+  // Bottom filters top depends on mode (manté el teu patró calc)
+  const bottomFiltersTop = selectedLibrary
+    ? `calc(${LIB_DETAILS_TOP} + ${LIB_DETAILS_ESTIMATED_HEIGHT_REM}rem + ${AFTER_LIB_MARGIN_REM}rem)`
+    : `calc(
+        ${INFOCARDS_TOP} +
+        (${INFOCARDS_COUNT} * ${INFOCARD_HEIGHT_REM}rem) +
+        (${INFOCARDS_COUNT - 1} * ${INFOCARDS_GAP_REM}rem) +
+        ${AFTER_CARDS_MARGIN_REM}rem
+      )`;
+
   // Panel slides in/out inside wrapper
   const panelLeft = isOpen ? "0rem" : `-${PANEL_WIDTH_REM}rem`;
 
-  // ✅ Tab position depends on open/closed:
-  // - Open: tab sits OUTSIDE the panel to the right
-  // - Closed: tab sits at x=0 (visible)
+  // Tab position depends on open/closed
   const tabLeft = isOpen ? `calc(${PANEL_WIDTH_REM}rem - 0.01rem)` : "0rem";
 
-  // ✅ Arrow direction:
-  // - Open: points left (closing)
-  // - Closed: points right (opening)
+  // Arrow direction
   const arrowRotate = isOpen ? "rotate(90deg)" : "rotate(-90deg)";
 
   return (
@@ -74,29 +85,21 @@ export default function MenuLateral({
         position: "absolute",
         top: "50%",
         transform: "translateY(-50%)",
-
-        // ✅ wrapper fixed position (always visible)
         left: "0.875rem",
-
-        // wrapper width = panel width + tab width (so tab has room)
         width: `calc(${PANEL_WIDTH_REM}rem + ${TAB_WIDTH_REM}rem)`,
         height: "78vh",
         maxHeight: "78vh",
-
         zIndex: 10,
         overflow: "visible",
       }}
     >
       {/* ✅ TAB ALWAYS VISIBLE */}
       <div
-        onClick={onClose} // parent toggles open/close
+        onClick={onClose}
         style={{
           position: "absolute",
-
-          // same height as your separator line level
           top: "14.1%",
-
-          left: tabLeft, // ✅ changes with open/closed
+          left: tabLeft,
           width: `${TAB_WIDTH_REM}rem`,
           height: "7.05%",
           background: "#0F6641",
@@ -120,7 +123,7 @@ export default function MenuLateral({
         />
       </div>
 
-      {/* ✅ WHITE PANEL (slides only this) */}
+      {/* ✅ WHITE PANEL */}
       <div
         style={{
           position: "absolute",
@@ -129,10 +132,8 @@ export default function MenuLateral({
           width: `${PANEL_WIDTH_REM}rem`,
           height: "100%",
           maxHeight: "100%",
-
           background: "#FFFFFF",
           opacity: 0.9,
-
           transition: "left 0.3s ease",
           overflowY: "auto",
           overflowX: "visible",
@@ -146,7 +147,7 @@ export default function MenuLateral({
           onSelectCountry={onSelectCountry}
         />
 
-        {/* Línia separadora (header → worldwide) */}
+        {/* Separator line */}
         <div
           style={{
             position: "absolute",
@@ -198,7 +199,7 @@ export default function MenuLateral({
           />
         </div>
 
-        {/* Línia separadora (worldwide → title) */}
+        {/* Separator line (under header section) */}
         <div
           style={{
             position: "absolute",
@@ -209,112 +210,128 @@ export default function MenuLateral({
           }}
         />
 
-        {/* Title */}
-        <div
-          style={{
-            position: "absolute",
-            top: "16.67%",
-            left: "9.17%",
-            width: "66.67%",
-            font: "normal normal bold 1.25rem/1.56rem Noto Sans",
-            color: "#000000",
-          }}
-        >
-          Libraries
-          <br />
-          Boosting Connectivity
-        </div>
+        {/* ✅ DYNAMIC CONTENT */}
+        {selectedLibrary ? (
+          // ===== Selected library mode =====
+          <div
+            style={{
+              position: "absolute",
+              top: LIB_DETAILS_TOP,
+              left: "9.17%",
+              right: "9.17%",
+            }}
+          >
+            <LibraryDetailsPanel library={selectedLibrary} />
+          </div>
+        ) : (
+          // ===== Default mode =====
+          <>
+            {/* Title */}
+            <div
+              style={{
+                position: "absolute",
+                top: "16.67%",
+                left: "9.17%",
+                width: "66.67%",
+                font: "normal normal bold 1.25rem/1.56rem Noto Sans",
+                color: "#000000",
+              }}
+            >
+              Libraries
+              <br />
+              Boosting Connectivity
+            </div>
 
-        {/* Description */}
-        <div
-          style={{
-            position: "absolute",
-            top: "25.38%",
-            left: "9.17%",
-            right: "9.17%",
-            font: "normal normal normal 1rem/1.56rem Noto Sans",
-            color: "#4B4B4B",
-          }}
-        >
-          An open & live global map of libraries and their connectivity
-        </div>
+            {/* Description */}
+            <div
+              style={{
+                position: "absolute",
+                top: "25.38%",
+                left: "9.17%",
+                right: "9.17%",
+                font: "normal normal normal 1rem/1.56rem Noto Sans",
+                color: "#4B4B4B",
+              }}
+            >
+              An open & live global map of libraries and their connectivity
+            </div>
 
-        {/* Info cards */}
-        <div
-          style={{
-            position: "absolute",
-            top: INFOCARDS_TOP,
-            left: "9.17%",
-            right: "9.17%",
-            display: "flex",
-            flexDirection: "column",
-            gap: `${INFOCARDS_GAP_REM}rem`,
-          }}
-        >
-          <InfoCard
-            icon="/img/menuLateral/Icon core-location-pin.png"
-            iconWidth="0.94rem"
-            iconHeight="1.31rem"
-            title={`${s.totalPoints.toLocaleString()}`}
-            subtitle="Libraries location mapped"
-            detail={
-              selectedCountry === "Worldwide"
-                ? "Worldwide view"
-                : `in ${selectedCountry}`
-            }
-          />
+            {/* Info cards */}
+            <div
+              style={{
+                position: "absolute",
+                top: INFOCARDS_TOP,
+                left: "9.17%",
+                right: "9.17%",
+                display: "flex",
+                flexDirection: "column",
+                gap: `${INFOCARDS_GAP_REM}rem`,
+              }}
+            >
+              <InfoCard
+                icon="/img/menuLateral/Icon core-location-pin.png"
+                iconWidth="0.94rem"
+                iconHeight="1.31rem"
+                title={`${s.totalPoints.toLocaleString()}`}
+                subtitle="Libraries location mapped"
+                detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
+              />
 
-          <InfoCard
-            icon="/img/menuLateral/Icon akar-wifi (1).png"
-            iconWidth="1.25rem"
-            iconHeight="1.06rem"
-            title={`${s.connectivityMapped.toLocaleString()}`}
-            subtitle="Libraries connectivity status mapped"
-            detail={
-              s.totalPoints
-                ? `${Math.round(
-                    (s.connectivityMapped / s.totalPoints) * 100
-                  )}% of mapped libraries`
-                : "N/A"
-            }
-            hasInfo={true}
-            progressBar={
-              s.totalPoints
-                ? {
-                    colors: ["#3ED896", "#E0E0E0"],
-                    widths: [
-                      (s.connectivityMapped / s.totalPoints) * 100,
-                      100 - (s.connectivityMapped / s.totalPoints) * 100,
-                    ],
-                  }
-                : null
-            }
-          />
+              <InfoCard
+                icon="/img/menuLateral/Icon akar-wifi (1).png"
+                iconWidth="1.25rem"
+                iconHeight="1.06rem"
+                title={`${s.connectivityMapped.toLocaleString()}`}
+                subtitle="Libraries connectivity status mapped"
+                detail={
+                  s.totalPoints
+                    ? `${Math.round((s.connectivityMapped / s.totalPoints) * 100)}% of mapped libraries`
+                    : "N/A"
+                }
+                hasInfo={true}
+                progressBar={
+                  s.totalPoints
+                    ? {
+                        colors: ["#3ED896", "#E0E0E0"],
+                        widths: [
+                          (s.connectivityMapped / s.totalPoints) * 100,
+                          100 - (s.connectivityMapped / s.totalPoints) * 100,
+                        ],
+                      }
+                    : null
+                }
+              />
 
-          <InfoCard
-            icon="/img/menuLateral/Icon core-cloud-download.png"
-            iconWidth="1.25rem"
-            iconHeight="1.06rem"
-            title={`${s.goodDownload.toLocaleString()}`}
-            subtitle="Libraries with good download speed"
-            detail={
-              s.downloadMeasured
-                ? `of ${s.downloadMeasured.toLocaleString()} libraries inspected`
-                : "No download data detected"
-            }
-            hasInfo={true}
-            progressBar={{
-              colors: ["#F82055", "#F9A825", "#3ED896"],
-              widths: [
-               (s.dlRed / s.downloadMeasured) * 100,
-                (s.dlOrange / s.downloadMeasured) * 100,
-                (s.dlGreen / s.downloadMeasured) * 100,
-              ],
-            }} 
-          />
-        </div>
+              <InfoCard
+                icon="/img/menuLateral/Icon core-cloud-download.png"
+                iconWidth="1.25rem"
+                iconHeight="1.06rem"
+                title={`${s.goodDownload.toLocaleString()}`}
+                subtitle="Libraries with good download speed"
+                detail={
+                  s.downloadMeasured
+                    ? `of ${s.downloadMeasured.toLocaleString()} libraries inspected`
+                    : "No download data detected"
+                }
+                hasInfo={true}
+                progressBar={
+                  s.downloadMeasured
+                    ? {
+                        colors: ["#F82055", "#F9A825", "#3ED896"],
+                        widths: [
+                          (s.dlRed / s.downloadMeasured) * 100,
+                          (s.dlOrange / s.downloadMeasured) * 100,
+                          (s.dlGreen / s.downloadMeasured) * 100,
+                        ],
+                      }
+                    : null
+                }
+              />
+            </div>
+          </>
+        )}
 
-        {/* Bottom filters */}
+        {/* ✅ Bottom filters ALWAYS */}
         <div
           style={{
             position: "absolute",
@@ -326,7 +343,7 @@ export default function MenuLateral({
           <BottomFilters isLoading={isLoading} />
         </div>
 
-        {/* Scroll room */}
+        {/* ✅ Scroll room ALWAYS */}
         <div
           style={{
             position: "absolute",
