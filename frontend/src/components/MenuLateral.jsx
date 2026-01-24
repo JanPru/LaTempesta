@@ -5,10 +5,12 @@ import BottomFilters from "./BottomFilters";
 import LibraryDetailsPanel from "./LibraryDetailsPanel";
 
 /*
- * MenuLateral (FINAL)
- * - When closed: ONLY the white panel slides out
- * - The tab stays visible so you can reopen
- * - Wrapper never moves (so tab never disappears)
+ * MenuLateral (FIXED + BottomFilters always at very bottom in selectedLibrary mode)
+ * - Default mode (Worldwide/Country): EXACTLY as you had it (absolute layout + calc top)  ✅ NO TOCAR
+ * - Selected library mode:
+ *   - Content flows (no overlap)
+ *   - Spacer pushes BottomFilters to the END of the panel (end of scroll)
+ * - Tab always visible; only white panel slides
  */
 export default function MenuLateral({
   isLoading,
@@ -22,7 +24,7 @@ export default function MenuLateral({
   countriesCount = 0,
   stats,
 
-  // ✅ NEW: biblioteca seleccionada (objecte amb properties)
+  // biblioteca seleccionada (objecte amb properties)
   selectedLibrary,
 }) {
   const [filters] = useState({
@@ -43,32 +45,28 @@ export default function MenuLateral({
   };
 
   // ===========
-  // ✅ LAYOUT CONSTANTS
+  // LAYOUT CONSTANTS
   // ===========
   const PANEL_WIDTH_REM = 22.5; // 22.5rem
-  const TAB_WIDTH_REM = 1.125;  // 1.125rem
+  const TAB_WIDTH_REM = 1.125; // 1.125rem
 
-  // Default cards layout
+  // Default cards layout (NO TOCAR)
   const INFOCARDS_TOP = "35.64%";
   const INFOCARDS_GAP_REM = 1.25;
   const INFOCARD_HEIGHT_REM = 6.2;
   const INFOCARDS_COUNT = 3;
   const AFTER_CARDS_MARGIN_REM = 8.0;
 
-  // Library details layout
+  // Selected library top (NO TOCAR el top)
   const LIB_DETAILS_TOP = "16.2%";
-  const LIB_DETAILS_ESTIMATED_HEIGHT_REM = 28; // espai “segur”
-  const AFTER_LIB_MARGIN_REM = 5;
 
-  // Bottom filters top depends on mode (manté el teu patró calc)
-  const bottomFiltersTop = selectedLibrary
-    ? `calc(${LIB_DETAILS_TOP} + ${LIB_DETAILS_ESTIMATED_HEIGHT_REM}rem + ${AFTER_LIB_MARGIN_REM}rem)`
-    : `calc(
-        ${INFOCARDS_TOP} +
-        (${INFOCARDS_COUNT} * ${INFOCARD_HEIGHT_REM}rem) +
-        (${INFOCARDS_COUNT - 1} * ${INFOCARDS_GAP_REM}rem) +
-        ${AFTER_CARDS_MARGIN_REM}rem
-      )`;
+  // Bottom filters top depends on mode (DEFAULT mode only; library mode won't use this)
+  const bottomFiltersTop = `calc(
+    ${INFOCARDS_TOP} +
+    (${INFOCARDS_COUNT} * ${INFOCARD_HEIGHT_REM}rem) +
+    (${INFOCARDS_COUNT - 1} * ${INFOCARDS_GAP_REM}rem) +
+    ${AFTER_CARDS_MARGIN_REM}rem
+  )`;
 
   // Panel slides in/out inside wrapper
   const panelLeft = isOpen ? "0rem" : `-${PANEL_WIDTH_REM}rem`;
@@ -93,7 +91,7 @@ export default function MenuLateral({
         overflow: "visible",
       }}
     >
-      {/* ✅ TAB ALWAYS VISIBLE */}
+      {/* TAB ALWAYS VISIBLE */}
       <div
         onClick={onClose}
         style={{
@@ -123,7 +121,7 @@ export default function MenuLateral({
         />
       </div>
 
-      {/* ✅ WHITE PANEL */}
+      {/* WHITE PANEL */}
       <div
         style={{
           position: "absolute",
@@ -210,21 +208,42 @@ export default function MenuLateral({
           }}
         />
 
-        {/* ✅ DYNAMIC CONTENT */}
+        {/* DYNAMIC CONTENT */}
         {selectedLibrary ? (
-          // ===== Selected library mode =====
+          // ===== Selected library mode (NO overlap + filters at end) =====
           <div
             style={{
               position: "absolute",
               top: LIB_DETAILS_TOP,
               left: "9.17%",
               right: "9.17%",
+
+              // ✅ vertical flow
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.25rem",
+              paddingBottom: "1.5rem",
+
+              // ✅ make this area at least fill the panel height below the top offset,
+              // so the spacer can push filters to the bottom when content is short
+              minHeight: `calc(100% - ${LIB_DETAILS_TOP})`,
             }}
           >
             <LibraryDetailsPanel library={selectedLibrary} />
+
+            {/* 🔑 SPACER: pushes BottomFilters to the very bottom */}
+            <div style={{ flexGrow: 1 }} />
+
+            {/* BottomFilters at the END (full width) */}
+            <div style={{ marginLeft: "-9.17%", marginRight: "-9.17%" }}>
+              <BottomFilters isLoading={isLoading} embedded />
+            </div>
+
+            {/* extra scroll room */}
+            <div style={{ height: "1rem" }} />
           </div>
         ) : (
-          // ===== Default mode =====
+          // ===== Default mode (NO TOCAR) =====
           <>
             {/* Title */}
             <div
@@ -274,7 +293,11 @@ export default function MenuLateral({
                 iconHeight="1.31rem"
                 title={`${s.totalPoints.toLocaleString()}`}
                 subtitle="Libraries location mapped"
-                detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
+                detail={
+                  selectedCountry === "Worldwide"
+                    ? "Worldwide view"
+                    : `in ${selectedCountry}`
+                }
               />
 
               <InfoCard
@@ -285,7 +308,9 @@ export default function MenuLateral({
                 subtitle="Libraries connectivity status mapped"
                 detail={
                   s.totalPoints
-                    ? `${Math.round((s.connectivityMapped / s.totalPoints) * 100)}% of mapped libraries`
+                    ? `${Math.round(
+                        (s.connectivityMapped / s.totalPoints) * 100
+                      )}% of mapped libraries`
                     : "N/A"
                 }
                 hasInfo={true}
@@ -328,29 +353,29 @@ export default function MenuLateral({
                 }
               />
             </div>
+
+            {/* Bottom filters ALWAYS (DEFAULT MODE) */}
+            <div
+              style={{
+                position: "absolute",
+                top: bottomFiltersTop,
+                left: 0,
+                right: 0,
+              }}
+            >
+              <BottomFilters isLoading={isLoading} />
+            </div>
+
+            {/* Scroll room ALWAYS */}
+            <div
+              style={{
+                position: "absolute",
+                top: `calc(${bottomFiltersTop} + 6rem)`,
+                height: "1px",
+              }}
+            />
           </>
         )}
-
-        {/* ✅ Bottom filters ALWAYS */}
-        <div
-          style={{
-            position: "absolute",
-            top: bottomFiltersTop,
-            left: 0,
-            right: 0,
-          }}
-        >
-          <BottomFilters isLoading={isLoading} />
-        </div>
-
-        {/* ✅ Scroll room ALWAYS */}
-        <div
-          style={{
-            position: "absolute",
-            top: `calc(${bottomFiltersTop} + 6rem)`,
-            height: "1px",
-          }}
-        />
       </div>
     </div>
   );

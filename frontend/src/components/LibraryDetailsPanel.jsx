@@ -42,13 +42,16 @@ export default function LibraryDetailsPanel({ library }) {
   const OTHER_TYPE_KEY = "Other (specify):Select the library type";
 
   const rawType = getStr(TYPE_KEY);
-  const isOtherType = rawType.toLowerCase() === "other";
+
+  // ✅ only when it's exactly "Other (specify)" we take the other column value
+  const isOtherType = rawType.toLowerCase() === "other (specify)";
 
   let type = rawType;
   if (isOtherType) {
     const otherRaw = getStr(OTHER_TYPE_KEY);
     type = otherRaw || "OTHER";
   }
+
   if (!type) type = "PUBLIC LIBRARY";
 
   /* =====================

@@ -6,7 +6,7 @@ import React, { useState } from "react";
  * - Tooltip is wider & less tall
  * - Pointer is a real triangle (not a rotated square)
  */
-export default function BottomFilters({ isLoading }) {
+export default function BottomFilters({ isLoading, embedded = false }) {
   const [hoverInfoIdx, setHoverInfoIdx] = useState(null);
 
   const filters = [
@@ -43,15 +43,19 @@ export default function BottomFilters({ isLoading }) {
   return (
     <div
       style={{
-        position: "absolute",
-        bottom: "1.3%",
-        left: "0",
-        right: "0",
+        // ✅ Per defecte: el teu comportament actual (no toquem res)
+        // ✅ Embedded: es comporta com un bloc normal (dins del scroll)
+        position: embedded ? "relative" : "absolute",
+        bottom: embedded ? "auto" : "1.3%",
+        left: embedded ? "0" : "0",
+        right: embedded ? "0" : "0",
+
         display: "flex",
         justifyContent: "center",
         gap: "0.5rem",
         flexWrap: "wrap",
-        padding: "0 4.17%",
+        padding: embedded ? "0 0" : "0 4.17%",
+        marginTop: embedded ? "1.25rem" : 0,
       }}
     >
       {isLoading ? (
@@ -139,34 +143,25 @@ export default function BottomFilters({ isLoading }) {
                       bottom: "145%",
                       left: "50%",
                       transform: "translateX(-50%)",
-
-                      // ✅ estil gris com la imatge
                       background: "#E2E2E2",
                       color: "#4B4B4B",
-
-                      // ✅ més ample i menys alt
                       width: "6.25rem",
                       padding: "0.5rem 0.625rem",
                       font: "normal normal normal 0.8125rem/1rem Noto Sans",
-
-                      // ✅ suau, sense "caixa dura"
                       border: "0",
                       boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
-
                       zIndex: 50,
                       textAlign: "left",
                     }}
                   >
                     {filter.infoText}
 
-                    {/* ✅ triangle real */}
                     <div
                       style={{
                         position: "absolute",
                         top: "100%",
                         left: "50%",
                         transform: "translateX(-50%)",
-
                         width: 0,
                         height: 0,
                         borderLeft: "0.4375rem solid transparent",
