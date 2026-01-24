@@ -1,5 +1,6 @@
+// MapPage.jsx
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import Map, { Source, Layer } from "react-map-gl/mapbox";
+import Map, { Source, Layer, Marker } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Papa from "papaparse";
 
@@ -47,6 +48,9 @@ export default function MapPage() {
 
   const [countryBBoxes, setCountryBBoxes] = useState(null);
   const [countriesGeojson, setCountriesGeojson] = useState(null);
+
+  // ✅ per fer l’offset del pin “clavat” al punt segons zoom
+  const [currentZoom, setCurrentZoom] = useState(8);
 
   const initialViewState = useMemo(
     () => ({
@@ -104,11 +108,13 @@ export default function MapPage() {
     return false;
   };
 
+  // ✅ bucket robust (JS) -> després Mapbox només fa "match" (no peta mai)
   const getDownloadBucket = (props) => {
     const raw =
       props?.[
         "What is the average Internet/download speed available at the library?"
       ];
+
     const v = String(raw ?? "")
       .toLowerCase()
       .replace(/[–—]/g, "-")
@@ -143,6 +149,15 @@ export default function MapPage() {
     return null;
   };
 
+  // ✅ color del pin: usa el bucket precalculat si existeix
+  const getHaloColorFromProps = (props) => {
+    const b = props?.__dlBucket ?? (getDownloadBucket(props) || "unknown");
+    if (b === "red") return "#F82055";
+    if (b === "orange") return "#FDB900";
+    if (b === "green") return "#3ED896";
+    return "#20BBCE";
+  };
+
   const computeStatsFromFeatures = (features) => {
     const totalPoints = features.length;
 
@@ -156,8 +171,8 @@ export default function MapPage() {
       const props = f.properties || {};
       if (hasConnectivityInfo(props)) connectivityMapped++;
 
-      const bucket = getDownloadBucket(props);
-      if (bucket) {
+      const bucket = props.__dlBucket ?? getDownloadBucket(props);
+      if (bucket && bucket !== "unknown") {
         downloadMeasured++;
         if (bucket === "red") dlRed++;
         else if (bucket === "orange") dlOrange++;
@@ -205,6 +220,23 @@ export default function MapPage() {
     ];
   };
 
+  // ✅ helper: cercle “radius” segons la teva expressió del layer (interpolate zoom)
+  const circleRadiusForZoom = (z) => {
+    if (!Number.isFinite(z)) return 5;
+
+    if (z <= 0) return 3;
+
+    if (z > 0 && z < 5) {
+      return 3 + ((z - 0) * (5 - 3)) / (5 - 0);
+    }
+
+    if (z >= 5 && z < 10) {
+      return 5 + ((z - 5) * (8 - 5)) / (10 - 5);
+    }
+
+    return 8;
+  };
+
   useEffect(() => {
     const loadCountriesGeo = async () => {
       try {
@@ -239,12 +271,23 @@ export default function MapPage() {
     loadCountriesGeo();
   }, []);
 
+  // ✅ Resize-proof: map.resize() quan canvia la finestra (o layout)
+  useEffect(() => {
+    const onResize = () => {
+      const map = mapRef.current?.getMap?.();
+      if (map) map.resize();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const onMouseEnter = useCallback(
     (e) => {
       if (!e.features || !e.features.length) return;
 
       const f = e.features[0];
       if (f?.layer?.id !== LAYER_CONFIG.points.id) return;
+      if (f?.source !== "libraries-source") return;
 
       if (hoveredFeature && mapRef.current) {
         mapRef.current.getMap().setFeatureState(
@@ -338,7 +381,6 @@ export default function MapPage() {
     [fullGeojson, countryBBoxes, globalStats, menuOpen]
   );
 
-  // ✅ selectedLibrary: només passem properties (type es calcula dins component)
   const selectedLibrary = useMemo(() => {
     if (!selectedFeature) return null;
     return { properties: selectedFeature.properties || {} };
@@ -352,16 +394,19 @@ export default function MapPage() {
         return;
       }
 
-      const pointHit = e.features.find((f) => f?.layer?.id === LAYER_CONFIG.points.id);
-      if (pointHit) {
-        setSelectedFeature(pointHit);
+      const hit = e.features.find((f) => f?.layer?.id === LAYER_CONFIG.points.id);
 
-        const clickedCountry = pointHit?.properties?.__country;
+      if (hit) {
+        setSelectedFeature(hit);
+
+        const clickedCountry = hit?.properties?.__country;
         handleSelectCountry(clickedCountry || "Worldwide");
         return;
       }
 
-      const countryHit = e.features.find((f) => f?.layer?.id === COUNTRY_LAYER.fill.id);
+      const countryHit = e.features.find(
+        (f) => f?.layer?.id === COUNTRY_LAYER.fill.id
+      );
       if (countryHit) {
         setSelectedFeature(null);
         const countryName = countryHit?.properties?.name;
@@ -407,6 +452,7 @@ export default function MapPage() {
               properties: {
                 ...props,
                 __country: c,
+                __dlBucket: getDownloadBucket(props) || "unknown", // ✅ FIX unknown halos
                 hasData: Boolean(props.name || props.address),
               },
             };
@@ -476,10 +522,33 @@ export default function MapPage() {
     return () => {
       map.off("mouseenter", LAYER_CONFIG.points.id, onEnter);
       map.off("mouseleave", LAYER_CONFIG.points.id, onLeave);
+
       map.off("mouseenter", COUNTRY_LAYER.fill.id, onEnter);
       map.off("mouseleave", COUNTRY_LAYER.fill.id, onLeave);
     };
   }, [geojson]);
+
+  // ✅ coords del seleccionat
+  const selectedCoords = useMemo(() => {
+    if (!selectedFeature?.geometry?.coordinates) return null;
+    const [lon, lat] = selectedFeature.geometry.coordinates;
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+    return { lon, lat };
+  }, [selectedFeature]);
+
+  // ✅ color del pin = color del halo (via __dlBucket)
+  const selectedPinColor = useMemo(() => {
+    if (!selectedFeature?.properties) return "#20BBCE";
+    return getHaloColorFromProps(selectedFeature.properties);
+  }, [selectedFeature]);
+
+  // ✅ offset del pin: “just a sobre del punt” segons zoom (estable)
+  const selectedPinOffset = useMemo(() => {
+    const r = circleRadiusForZoom(currentZoom);
+    const gap = -8;
+    const y = -(r + gap);
+    return [0, y];
+  }, [currentZoom]);
 
   return (
     <div
@@ -536,6 +605,10 @@ export default function MapPage() {
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
+        onMove={(evt) => {
+          const z = evt?.viewState?.zoom;
+          if (Number.isFinite(z)) setCurrentZoom(z);
+        }}
       >
         {countriesGeojson && (
           <Source id="countries-source" type="geojson" data={countriesGeojson}>
@@ -545,19 +618,51 @@ export default function MapPage() {
         )}
 
         {geojson && (
-          <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
-            <Layer {...LAYER_CONFIG.points} />
+          <Source
+            id="libraries-source"
+            type="geojson"
+            data={geojson}
+            promoteId="id"
+          >
+            {/* ✅ PUNTS: amaguem el seleccionat perquè ara es veurà com a pin */}
+            <Layer
+              {...LAYER_CONFIG.points}
+              paint={{
+                ...LAYER_CONFIG.points.paint,
+                "circle-opacity": [
+                  "case",
+                  ["==", ["id"], selectedFeature?.id ?? -1],
+                  0,
+                  1,
+                ],
+              }}
+            />
+
+            {/* ✅ HALO: ara amb __dlBucket (no peta -> no negre) */}
             {selectedCountry !== "Worldwide" && (
               <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
             )}
           </Source>
         )}
 
+        {/* ✅ PIN DEFAULT (com new mapboxgl.Marker()) */}
+        {selectedCoords && (
+          <Marker
+            key={`${selectedFeature?.id ?? "none"}-${selectedPinColor}`}
+            longitude={selectedCoords.lon}
+            latitude={selectedCoords.lat}
+            anchor="bottom"
+            color={selectedPinColor}
+            offset={selectedPinOffset}
+            onClick={(e) => e.originalEvent.stopPropagation()}
+          />
+        )}
+
+        {/* ✅ Popup */}
         {selectedFeature && (
           <LibraryInfoPopup
             feature={selectedFeature}
             onClose={() => setSelectedFeature(null)}
-            pinSrc="/img/pin.svg"
           />
         )}
       </Map>
@@ -578,55 +683,67 @@ export const LAYER_CONFIG = {
         ["boolean", ["feature-state", "hover"], false],
         "#005FCC",
 
-        ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "yes"],
+        [
+          "==",
+          ["downcase", ["get", "Does the library currently have Internet access?"]],
+          "yes",
+        ],
         "#3ED896",
 
-        ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "no"],
+        [
+          "==",
+          ["downcase", ["get", "Does the library currently have Internet access?"]],
+          "no",
+        ],
         "#F82055",
 
         "#20BBCE",
       ],
       "circle-stroke-color": "#FFFFFF",
-      "circle-stroke-width": 1.5,
+      "circle-stroke-width": 0,
       "circle-opacity": 1,
     },
   },
 
+  // ✅ FIX: halo usa bucket precalculat i fallback blau
   halo: {
-    id: "library-halo",
-    type: "circle",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 6, 5, 10.5, 10, 14],
-      "circle-color": [
-        "case",
+  id: "library-halo",
+  type: "circle",
+  paint: {
+    "circle-radius": [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      0, 6,
+      5, 10.5,
+      10, 14
+    ],
 
-        [
-          "any",
-          ["in", "less than 1", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-          ["in", "between 1-5", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-        ],
-        "#F82055",
-
-        [
-          "any",
-          ["in", "between 5-20", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-          ["in", "between 20-40", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-        ],
-        "#FDB900",
-
-        [
-          "any",
-          ["in", "between 40-100", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-          ["in", "more than 100", ["downcase", ["get", "What is the average Internet/download speed available at the library?"]]],
-        ],
-        "#3ED896",
-
-        "#20BBCE",
+    // ❌ NO HALO si Not connected
+    "circle-opacity": [
+      "case",
+      [
+        "==",
+        ["downcase", ["get", "Does the library currently have Internet access?"]],
+        "no"
       ],
-      "circle-opacity": 0.5,
-      "circle-stroke-width": 0,
-    },
-  },
+      0,
+      0.5
+    ],
+
+    // 🎨 color segons bucket (ja arreglat)
+    "circle-color": [
+      "match",
+      ["get", "__dlBucket"],
+      "red", "#F82055",
+      "orange", "#FDB900",
+      "green", "#3ED896",
+      "#20BBCE" // unknown
+    ],
+
+    "circle-stroke-width": 0
+  }
+}
 };
 
 export const COUNTRY_LAYER = {

@@ -1,5 +1,6 @@
+// LibraryInfoPopup.jsx
 import React, { useMemo } from "react";
-import { Marker, Popup } from "react-map-gl/mapbox";
+import { Popup } from "react-map-gl/mapbox";
 
 const STATUS_COLORS = {
   Connected: "#3ED896",
@@ -7,11 +8,7 @@ const STATUS_COLORS = {
   Unknown: "#20BBCE",
 };
 
-export default function LibraryInfoPopup({
-  feature,
-  onClose,
-  pinSrc = "/img/GreenPin.png",
-}) {
+export default function LibraryInfoPopup({ feature, onClose }) {
   const view = useMemo(() => {
     if (!feature) return null;
 
@@ -19,10 +16,7 @@ export default function LibraryInfoPopup({
     const props = feature.properties || {};
 
     const name =
-      props.name ||
-      props["Library name"] ||
-      props["library_name"] ||
-      "Library";
+      props.name || props["Library name"] || props["library_name"] || "Library";
 
     const coordText =
       Number.isFinite(lat) && Number.isFinite(lon)
@@ -51,83 +45,60 @@ export default function LibraryInfoPopup({
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
 
   return (
-    <>
-      <Marker longitude={lon} latitude={lat} anchor="bottom">
-        <img
-          src={pinSrc}
-          alt=""
+    <Popup
+      longitude={lon}
+      latitude={lat}
+      anchor="left"
+      closeButton={false}
+      closeOnClick={false}
+      offset={[14, -10]}
+      onClose={onClose}
+    >
+      <div style={{ minWidth: "260px", padding: "10px 12px" }}>
+        {/* NAME */}
+        <div
           style={{
-            width: "28px",
-            height: "28px",
-            transform: "translateY(-6px)",
-            cursor: "pointer",
+            font: "normal normal bold 15px/16px Noto Sans",
+            color: "#000000",
+            marginBottom: "12px",
           }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      </Marker>
-
-      <Popup
-        longitude={lon}
-        latitude={lat}
-        anchor="left"
-        closeButton={false}
-        closeOnClick={false}
-        offset={[14, -10]}
-        onClose={onClose}
-      >
-        <div style={{ minWidth: "260px", padding: "10px 12px" }}>
-          {/* NAME */}
-          <div
-            style={{
-              font: "normal normal bold 15px/16px Noto Sans",
-              color: "#000000",
-              marginBottom: "12px",
-            }}
-          >
-            {name}
-          </div>
-
-          <div
-            style={{
-              font: "normal normal normal 12px/16px Noto Sans",
-              color: "#4B4B4B",
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-            }}
-          >
-            <IconRow
-              icon="/img/menuLateral/Icon core-location-pin.png"
-              value={coordText}
-            />
-
-            <IconRow
-              icon="/img/menuLateral/Icon akar-wifi (1).png"
-              value={status}
-              valueStyle={{ color: statusColor, fontWeight: 700 }}
-            />
-
-            <IconRow
-              icon="/img/menuLateral/Icon core-cloud-download.png"
-              value={downloadLabel}
-            />
-          </div>
+        >
+          {name}
         </div>
-      </Popup>
-    </>
+
+        <div
+          style={{
+            font: "normal normal normal 12px/16px Noto Sans",
+            color: "#4B4B4B",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <IconRow
+            icon="/img/menuLateral/Icon core-location-pin.png"
+            value={coordText}
+          />
+
+          <IconRow
+            icon="/img/menuLateral/Icon akar-wifi (1).png"
+            value={status}
+            valueStyle={{ color: statusColor, fontWeight: 700 }}
+          />
+
+          <IconRow
+            icon="/img/menuLateral/Icon core-cloud-download.png"
+            value={downloadLabel}
+          />
+        </div>
+      </div>
+    </Popup>
   );
 }
 
 function IconRow({ icon, value, valueStyle }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-      }}
-    >
-      {/* ICON BOX */}
+    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
       <div
         style={{
           width: "18px",
@@ -150,19 +121,10 @@ function IconRow({ icon, value, valueStyle }) {
         />
       </div>
 
-      {/* TEXT */}
-      <span
-        style={{
-          lineHeight: "16px",
-          ...valueStyle,
-        }}
-      >
-        {value}
-      </span>
+      <span style={{ lineHeight: "16px", ...valueStyle }}>{value}</span>
     </div>
   );
 }
-
 
 function getStatus(props) {
   const v = String(
@@ -178,9 +140,8 @@ function getStatus(props) {
 
 function getDownloadCategory(props) {
   const v = String(
-    props?.[
-      "What is the average Internet/download speed available at the library?"
-    ] ?? ""
+    props?.["What is the average Internet/download speed available at the library?"] ??
+      ""
   )
     .toLowerCase()
     .replace(/[–—]/g, "-")
