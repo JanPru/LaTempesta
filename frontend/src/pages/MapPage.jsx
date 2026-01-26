@@ -27,6 +27,54 @@ export default function MapPage() {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
 
+  // ✅ BOTTOM FILTER SELECTED
+  const [activeBottomFilter, setActiveBottomFilter] = useState("library_status");
+
+  // =========================================================
+  // ✅ NOT CONNECT: reasons columns (exact headers)
+  // =========================================================
+  const NOT_CONNECT_REASON_COLS = useMemo(
+    () => [
+      {
+        key: "infrastructure",
+        label: "Infrastructure limitations",
+        col:
+          "Infrastructure limitations:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+      {
+        key: "high_cost",
+        label: "High cost",
+        col:
+          "High cost:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+      {
+        key: "electrical",
+        label: "Electrical supply issues",
+        col:
+          "Electrical supply issues:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+      {
+        key: "digital_literacy",
+        label: "Digital literacy gaps",
+        col:
+          "Digital literacy gaps (library staff lacks basic digital skills so there would be underutilization of connectivity resources):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+      {
+        key: "policy",
+        label: "Policy/Regulatory barriers",
+        col:
+          "Policy/Regulatory barriers (national regulations limit Internet access):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+      {
+        key: "all_above",
+        label: "All of the above",
+        col:
+          "All of the above:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+      },
+    ],
+    []
+  );
+
   const [globalStats, setGlobalStats] = useState({
     totalPoints: 0,
     connectivityMapped: 0,
@@ -35,6 +83,10 @@ export default function MapPage() {
     dlRed: 0,
     dlOrange: 0,
     dlGreen: 0,
+    internetYes: 0,
+    internetNo: 0,
+    connectionTypeCounts: null,
+    notConnectReasonsCounts: null,
   });
 
   const [countryStats, setCountryStats] = useState({
@@ -45,12 +97,15 @@ export default function MapPage() {
     dlRed: 0,
     dlOrange: 0,
     dlGreen: 0,
+    internetYes: 0,
+    internetNo: 0,
+    connectionTypeCounts: null,
+    notConnectReasonsCounts: null,
   });
 
   const [countryBBoxes, setCountryBBoxes] = useState(null);
   const [countriesGeojson, setCountriesGeojson] = useState(null);
 
-  // ✅ per fer l’offset del pin “clavat” al punt segons zoom
   const [currentZoom, setCurrentZoom] = useState(8);
 
   const initialViewState = useMemo(
@@ -91,6 +146,85 @@ export default function MapPage() {
     return "";
   };
 
+  // =========================================================
+  // TYPE OF CONNECTION helpers
+  // =========================================================
+  const CONNECTION_COL = "What type of internet connection does your library have?";
+
+  const splitMulti = (raw) => {
+    return String(raw ?? "")
+      .split(/[,;/|]+/g)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
+
+  const bucketConnectionType = (token) => {
+    const t = String(token ?? "").toLowerCase().trim();
+    if (!t) return "unknown";
+
+    if (t.includes("optic") || t.includes("fiber") || t.includes("fibre")) return "optic_fiber";
+    if (t.includes("dsl") || t.includes("adsl") || t.includes("vdsl")) return "dsl";
+    if (t.includes("satellite") || t.includes("sat")) return "satellite";
+    if (t.includes("cable") || t.includes("coax")) return "cable";
+
+    if (
+      t.includes("mobile") ||
+      t.includes("cell") ||
+      t.includes("3g") ||
+      t.includes("4g") ||
+      t.includes("5g") ||
+      t.includes("lte")
+    ) {
+      return "mobile_data";
+    }
+
+    if (t.includes("other")) return "other";
+    if (t === "unknown" || t === "n/a" || t === "na" || t === "none") return "unknown";
+
+    return "other";
+  };
+
+  const CONNECTION_COLORS = {
+    optic_fiber: "#FF2AAE",
+    dsl: "#FF8A00",
+    satellite: "#5CFF7A",
+    cable: "#D5E600",
+    mobile_data: "#1E5BFF",
+    other: "#7A1FFF",
+    unknown: "#27C7D8",
+  };
+
+  const CONNECTION_PRIORITY = [
+    "optic_fiber",
+    "cable",
+    "dsl",
+    "mobile_data",
+    "satellite",
+    "other",
+    "unknown",
+  ];
+
+  const primaryConnectionBucketFromProps = (props) => {
+    const rawConn = props?.[CONNECTION_COL];
+    const tokens = splitMulti(rawConn);
+
+    if (!tokens.length) return "unknown";
+
+    const buckets = Array.from(new Set(tokens.map(bucketConnectionType)));
+    for (const p of CONNECTION_PRIORITY) {
+      if (buckets.includes(p)) return p;
+    }
+    return buckets[0] || "unknown";
+  };
+
+  const getConnectionColorFromProps = (props) => {
+    const b = props?.__connBucket || primaryConnectionBucketFromProps(props);
+    return CONNECTION_COLORS[b] || CONNECTION_COLORS.unknown;
+  };
+
+  // =========================================================
+  // Existing helpers (download buckets etc.)
+  // =========================================================
   const hasConnectivityInfo = (props) => {
     if (!props) return false;
     for (const [k, v] of Object.entries(props)) {
@@ -108,10 +242,8 @@ export default function MapPage() {
     return false;
   };
 
-  // ✅ bucket robust (JS) -> després Mapbox només fa "match" (no peta mai)
   const getDownloadBucket = (props) => {
-    const raw =
-      props?.["What is the average Internet/download speed available at the library?"];
+    const raw = props?.["What is the average Internet/download speed available at the library?"];
 
     const v = String(raw ?? "")
       .toLowerCase()
@@ -147,13 +279,63 @@ export default function MapPage() {
     return null;
   };
 
-  // ✅ color del pin: usa el bucket precalculat si existeix
   const getHaloColorFromProps = (props) => {
     const b = props?.__dlBucket ?? (getDownloadBucket(props) || "unknown");
     if (b === "red") return "#F82055";
     if (b === "orange") return "#FDB900";
     if (b === "green") return "#3ED896";
     return "#20BBCE";
+  };
+
+  // ✅ helper: when a column has ANY value => reason selected
+  const hasReasonValue = (v) => {
+    if (v == null) return false;
+    const s = String(v).trim();
+    if (!s) return false;
+    const l = s.toLowerCase();
+    if (l === "na" || l === "n/a" || l === "none" || l === "null") return false;
+    if (l === "0" || l === "false" || l === "no") return false;
+    return true;
+  };
+
+  // =========================================================
+  // ✅ NOT CONNECT colors + reason bucket
+  // =========================================================
+  const NOT_CONNECT_COLORS = {
+    infrastructure: "#36A6D8",
+    high_cost: "#FF6C00",
+    electrical: "#0EAD27",
+    digital_literacy: "#B3BE39",
+    policy: "#9E65AC",
+    multi: "#D83A8F",
+    unknown: "#20BBCE",
+  };
+
+  const getNotConnectReasonBucketFromProps = (props) => {
+    const acc = String(props?.["Does the library currently have Internet access?"] ?? "")
+      .trim()
+      .toLowerCase();
+
+    if (acc !== "no") return "unknown";
+
+    const allAboveDef = NOT_CONNECT_REASON_COLS.find((x) => x.key === "all_above");
+    const hasAllAbove = allAboveDef ? hasReasonValue(props?.[allAboveDef.col]) : false;
+    if (hasAllAbove) return "multi";
+
+    const selected = [];
+    for (const r of NOT_CONNECT_REASON_COLS) {
+      if (r.key === "all_above") continue;
+      if (hasReasonValue(props?.[r.col])) selected.push(r.key);
+    }
+
+    if (selected.length >= 2) return "multi";
+    if (selected.length === 1) return selected[0];
+    return "unknown";
+  };
+
+  const getNotConnectColorFromProps = (props) => {
+    const b = props?.__reasonBucket || getNotConnectReasonBucketFromProps(props);
+    return NOT_CONNECT_COLORS[b] || NOT_CONNECT_COLORS.unknown;
   };
 
   const computeStatsFromFeatures = (features) => {
@@ -165,9 +347,69 @@ export default function MapPage() {
     let dlOrange = 0;
     let dlGreen = 0;
 
+    let internetYes = 0;
+    let internetNo = 0;
+
+    const connectionTypeCounts = {
+      optic_fiber: 0,
+      dsl: 0,
+      satellite: 0,
+      cable: 0,
+      mobile_data: 0,
+      other: 0,
+      unknown: 0,
+    };
+
+    // ✅ NEW: not connect reasons (sense all_above com a categoria)
+    const notConnectReasonsCounts = NOT_CONNECT_REASON_COLS.reduce((acc, r) => {
+      if (r.key !== "all_above") acc[r.key] = 0;
+      return acc;
+    }, {});
+
     for (const f of features) {
       const props = f.properties || {};
       if (hasConnectivityInfo(props)) connectivityMapped++;
+
+      const acc = String(props["Does the library currently have Internet access?"] ?? "")
+        .trim()
+        .toLowerCase();
+
+      const isNo = acc === "no";
+      if (acc === "yes") internetYes++;
+      else if (isNo) internetNo++;
+
+      if (isNo) {
+        // si marca "All of the above", suma a totes les categories (excepte all_above)
+        const allAboveDef = NOT_CONNECT_REASON_COLS.find((x) => x.key === "all_above");
+        const hasAllAbove = allAboveDef ? hasReasonValue(props?.[allAboveDef.col]) : false;
+
+        if (hasAllAbove) {
+          for (const r of NOT_CONNECT_REASON_COLS) {
+            if (r.key === "all_above") continue;
+            notConnectReasonsCounts[r.key] = (notConnectReasonsCounts[r.key] || 0) + 1;
+          }
+        } else {
+          for (const r of NOT_CONNECT_REASON_COLS) {
+            if (r.key === "all_above") continue;
+            if (hasReasonValue(props?.[r.col])) {
+              notConnectReasonsCounts[r.key] = (notConnectReasonsCounts[r.key] || 0) + 1;
+            }
+          }
+        }
+      }
+
+      // count type of connection (multi-select adds to each)
+      const rawConn = props[CONNECTION_COL];
+      const tokens = splitMulti(rawConn);
+
+      if (!tokens.length) {
+        connectionTypeCounts.unknown++;
+      } else {
+        const uniqueBuckets = new Set(tokens.map(bucketConnectionType));
+        uniqueBuckets.forEach((b) => {
+          connectionTypeCounts[b] = (connectionTypeCounts[b] || 0) + 1;
+        });
+      }
 
       const bucket = props.__dlBucket ?? getDownloadBucket(props);
       if (bucket && bucket !== "unknown") {
@@ -186,6 +428,10 @@ export default function MapPage() {
       dlRed,
       dlOrange,
       dlGreen,
+      internetYes,
+      internetNo,
+      connectionTypeCounts,
+      notConnectReasonsCounts,
     };
   };
 
@@ -218,7 +464,6 @@ export default function MapPage() {
     ];
   };
 
-  // ✅ helper: cercle “radius” segons la teva expressió del layer (interpolate zoom)
   const circleRadiusForZoom = (z) => {
     if (!Number.isFinite(z)) return 5;
     if (z <= 0) return 3;
@@ -228,6 +473,9 @@ export default function MapPage() {
     return 8;
   };
 
+  // =========================================================
+  // Countries geojson + resize
+  // =========================================================
   useEffect(() => {
     const loadCountriesGeo = async () => {
       try {
@@ -262,7 +510,6 @@ export default function MapPage() {
     loadCountriesGeo();
   }, []);
 
-  // ✅ Resize-proof: map.resize() quan canvia la finestra (o layout)
   useEffect(() => {
     const onResize = () => {
       const map = mapRef.current?.getMap?.();
@@ -272,6 +519,9 @@ export default function MapPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // =========================================================
+  // Hover / click
+  // =========================================================
   const onMouseEnter = useCallback(
     (e) => {
       if (!e.features || !e.features.length) return;
@@ -329,12 +579,7 @@ export default function MapPage() {
           );
 
           mapRef.current.getMap().fitBounds(bounds, {
-            padding: {
-              top: 80,
-              bottom: 80,
-              left: menuOpen ? 420 : 60,
-              right: 60,
-            },
+            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
             duration: 800,
             maxZoom: 3.5,
           });
@@ -354,12 +599,7 @@ export default function MapPage() {
         const bbox = countryBBoxes[n];
         if (bbox) {
           mapRef.current.getMap().fitBounds(bbox, {
-            padding: {
-              top: 90,
-              bottom: 90,
-              left: menuOpen ? 420 : 60,
-              right: 80,
-            },
+            padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
             duration: 800,
             maxZoom: 5.0,
           });
@@ -386,7 +626,6 @@ export default function MapPage() {
 
       if (hit) {
         setSelectedFeature(hit);
-
         const clickedCountry = hit?.properties?.__country;
         handleSelectCountry(clickedCountry || "Worldwide");
         return;
@@ -402,6 +641,9 @@ export default function MapPage() {
     [handleSelectCountry]
   );
 
+  // =========================================================
+  // LOAD CSV -> geojson (✅ also computes __connBucket + __reasonBucket)
+  // =========================================================
   useEffect(() => {
     const load = async () => {
       try {
@@ -431,6 +673,10 @@ export default function MapPage() {
             const c = extractCountryFromProps(props);
             if (c) countrySet.add(c);
 
+            const dlBucket = getDownloadBucket(props) || "unknown";
+            const connBucket = primaryConnectionBucketFromProps(props);
+            const reasonBucket = getNotConnectReasonBucketFromProps(props);
+
             return {
               type: "Feature",
               id: index,
@@ -438,7 +684,9 @@ export default function MapPage() {
               properties: {
                 ...props,
                 __country: c,
-                __dlBucket: getDownloadBucket(props) || "unknown", // ✅ FIX unknown halos
+                __dlBucket: dlBucket,
+                __connBucket: connBucket,
+                __reasonBucket: reasonBucket,
                 hasData: Boolean(props.name || props.address),
               },
             };
@@ -471,12 +719,7 @@ export default function MapPage() {
           );
 
           mapRef.current.getMap().fitBounds(bounds, {
-            padding: {
-              top: 80,
-              bottom: 80,
-              left: menuOpen ? 420 : 60,
-              right: 60,
-            },
+            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
             duration: 800,
             maxZoom: 3.5,
           });
@@ -514,7 +757,6 @@ export default function MapPage() {
     };
   }, [geojson]);
 
-  // ✅ coords del seleccionat
   const selectedCoords = useMemo(() => {
     if (!selectedFeature?.geometry?.coordinates) return null;
     const [lon, lat] = selectedFeature.geometry.coordinates;
@@ -522,19 +764,125 @@ export default function MapPage() {
     return { lon, lat };
   }, [selectedFeature]);
 
-  // ✅ color del pin = color del halo (via __dlBucket)
+  // ✅ pin color follows same rule as point color
   const selectedPinColor = useMemo(() => {
-    if (!selectedFeature?.properties) return "#20BBCE";
-    return getHaloColorFromProps(selectedFeature.properties);
-  }, [selectedFeature]);
+    const props = selectedFeature?.properties;
+    if (!props) return "#20BBCE";
 
-  // ✅ offset del pin: “just a sobre del punt” segons zoom (estable)
+    if (activeBottomFilter === "type_connect") {
+      return getConnectionColorFromProps(props);
+    }
+
+    if (activeBottomFilter === "not_connect") {
+      return getNotConnectColorFromProps(props); // only "no" should be selectable anyway
+    }
+
+    return getHaloColorFromProps(props);
+  }, [selectedFeature, activeBottomFilter]);
+
   const selectedPinOffset = useMemo(() => {
     const r = circleRadiusForZoom(currentZoom);
     const gap = -8;
     const y = -(r + gap);
     return [0, y];
   }, [currentZoom]);
+
+  const pointsPaint = useMemo(() => {
+    const base = {
+      ...LAYER_CONFIG.points.paint,
+      "circle-opacity": [
+        "case",
+        ["==", ["id"], selectedFeature?.id ?? -1],
+        0,
+        1,
+      ],
+    };
+
+    if (activeBottomFilter === "type_connect") {
+      return {
+        ...base,
+        "circle-color": [
+          "case",
+          ["boolean", ["feature-state", "hover"], false],
+          "#005FCC",
+
+          [
+            "match",
+            ["get", "__connBucket"],
+            "optic_fiber",
+            CONNECTION_COLORS.optic_fiber,
+            "dsl",
+            CONNECTION_COLORS.dsl,
+            "satellite",
+            CONNECTION_COLORS.satellite,
+            "cable",
+            CONNECTION_COLORS.cable,
+            "mobile_data",
+            CONNECTION_COLORS.mobile_data,
+            "other",
+            CONNECTION_COLORS.other,
+            CONNECTION_COLORS.unknown,
+          ],
+        ],
+      };
+    }
+
+    if (activeBottomFilter === "not_connect") {
+      return {
+        ...base,
+        "circle-color": [
+          "case",
+          ["boolean", ["feature-state", "hover"], false],
+          "#005FCC",
+
+          [
+            "match",
+            ["get", "__reasonBucket"],
+            "infrastructure",
+            NOT_CONNECT_COLORS.infrastructure,
+            "high_cost",
+            NOT_CONNECT_COLORS.high_cost,
+            "electrical",
+            NOT_CONNECT_COLORS.electrical,
+            "digital_literacy",
+            NOT_CONNECT_COLORS.digital_literacy,
+            "policy",
+            NOT_CONNECT_COLORS.policy,
+            "multi",
+            NOT_CONNECT_COLORS.multi,
+            NOT_CONNECT_COLORS.unknown,
+          ],
+        ],
+      };
+    }
+
+    return base;
+  }, [activeBottomFilter, selectedFeature?.id]);
+
+  // ✅ HIDE connected points when mode is not_connect
+  const pointsFilter = useMemo(() => {
+    if (activeBottomFilter === "not_connect") {
+      return [
+        "==",
+        ["downcase", ["get", "Does the library currently have Internet access?"]],
+        "no",
+      ];
+    }
+    return undefined;
+  }, [activeBottomFilter]);
+
+  // ✅ If a "yes" point was selected and user switches to not_connect, clear selection
+  useEffect(() => {
+    if (activeBottomFilter !== "not_connect") return;
+
+    const acc = String(
+      selectedFeature?.properties?.["Does the library currently have Internet access?"] ?? ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (acc === "yes") setSelectedFeature(null);
+  }, [activeBottomFilter, selectedFeature]);
 
   return (
     <div
@@ -560,9 +908,10 @@ export default function MapPage() {
         countriesCount={countries.length}
         stats={countryStats}
         selectedLibrary={selectedLibrary}
+        activeBottomFilter={activeBottomFilter}
+        onChangeBottomFilter={setActiveBottomFilter}
       />
 
-      {/* ✅ TOP BRAND (resize-proof dins del component) */}
       <TopBrand menuOpen={false} />
 
       {error && (
@@ -608,28 +957,17 @@ export default function MapPage() {
 
         {geojson && (
           <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
-            {/* ✅ PUNTS: amaguem el seleccionat perquè ara es veurà com a pin */}
-            <Layer
-              {...LAYER_CONFIG.points}
-              paint={{
-                ...LAYER_CONFIG.points.paint,
-                "circle-opacity": [
-                  "case",
-                  ["==", ["id"], selectedFeature?.id ?? -1],
-                  0,
-                  1,
-                ],
-              }}
-            />
+            <Layer {...LAYER_CONFIG.points} paint={pointsPaint} filter={pointsFilter} />
 
-            {/* ✅ HALO: ara amb __dlBucket (no peta -> no negre) */}
-            {selectedCountry !== "Worldwide" && (
-              <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
-            )}
+            {/* ✅ Halo only in default mode */}
+            {selectedCountry !== "Worldwide" &&
+              activeBottomFilter !== "type_connect" &&
+              activeBottomFilter !== "not_connect" && (
+                <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
+              )}
           </Source>
         )}
 
-        {/* ✅ PIN DEFAULT (com new mapboxgl.Marker()) */}
         {selectedCoords && (
           <Marker
             key={`${selectedFeature?.id ?? "none"}-${selectedPinColor}`}
@@ -642,16 +980,12 @@ export default function MapPage() {
           />
         )}
 
-        {/* ✅ Popup */}
         {selectedFeature && (
-          <LibraryInfoPopup
-            feature={selectedFeature}
-            onClose={() => setSelectedFeature(null)}
-          />
+          <LibraryInfoPopup feature={selectedFeature} onClose={() => setSelectedFeature(null)} />
         )}
       </Map>
 
-      <MapLegend />
+      <MapLegend mode={activeBottomFilter} />
     </div>
   );
 }
@@ -689,22 +1023,17 @@ export const LAYER_CONFIG = {
     },
   },
 
-  // ✅ FIX: halo usa bucket precalculat i fallback blau
   halo: {
     id: "library-halo",
     type: "circle",
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 6, 5, 10.5, 10, 14],
-
-      // ❌ NO HALO si Not connected
       "circle-opacity": [
         "case",
         ["==", ["downcase", ["get", "Does the library currently have Internet access?"]], "no"],
         0,
         0.5,
       ],
-
-      // 🎨 color segons bucket (ja arreglat)
       "circle-color": [
         "match",
         ["get", "__dlBucket"],
@@ -714,9 +1043,8 @@ export const LAYER_CONFIG = {
         "#FDB900",
         "green",
         "#3ED896",
-        "#20BBCE", // unknown
+        "#20BBCE",
       ],
-
       "circle-stroke-width": 0,
     },
   },

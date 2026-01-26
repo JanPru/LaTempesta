@@ -77,16 +77,13 @@ export default function InfoCard({
                       background: "#E2E2E2",
                       color: "#4B4B4B",
 
-                      // ✅ més prim, però adaptable
                       width: "10.625rem",
                       maxWidth: "10.625rem",
                       boxSizing: "border-box",
 
-                      // ✅ més alt
                       padding: "0.75rem 0.625rem",
                       font: "normal normal normal 0.8125rem/1.125rem Noto Sans",
 
-                      // ✅ CLAU: wrap correcte
                       whiteSpace: "normal",
                       overflowWrap: "anywhere",
                       wordBreak: "break-word",
