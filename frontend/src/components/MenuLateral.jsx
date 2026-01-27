@@ -337,6 +337,118 @@ function TypeOfConnectionCard({ counts }) {
   );
 }
 
+function PerceivedQualityCard({ counts }) {
+  const c = counts || {};
+
+  const data = [
+    { key: "very_poor", label: "Very\npoor", color: "#F82055" },
+    { key: "poor", label: "Poor", color: "#FF7A00" },
+    { key: "fair", label: "Fair", color: "#FFD400" },
+    { key: "good", label: "Good", color: "#8BE04E" },
+    { key: "excellent", label: "Excellent", color: "#2EAD27" },
+  ].map((d) => ({ ...d, rawValue: Number(c[d.key] || 0) }));
+
+  const max = Math.max(...data.map((d) => d.rawValue), 1);
+
+  // ✅ igual que TypeOfConnectionCard
+  const MAX_BAR_PCT = 85;
+  const CHART_SHIFT_LEFT = 0.85;
+  const LABEL_COL_REM = 3.7; // igual que type_connect
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+        <img
+          src="/img/menuLateral/Icon akar-star.png"
+          alt=""
+          style={{
+            width: "1.25rem",
+            height: "1.25rem",
+            marginTop: "0.22rem",
+            flexShrink: 0,
+            objectFit: "contain",
+          }}
+        />
+
+        <div style={{ flex: 1 }}>
+          {/* ✅ títol amb salt de línia + mateix estil */}
+          <div
+            style={{
+              font: "normal normal bold 1.25rem/1.56rem Noto Sans",
+              color: "#4B4B4B",
+              marginBottom: "0.5rem",
+              whiteSpace: "pre-line",
+            }}
+          >
+            Perceived quality of{"\n"}internet access
+          </div>
+
+          <div style={{ marginLeft: `-${CHART_SHIFT_LEFT}rem` }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              {data.map((d) => {
+                const pct = (d.rawValue / max) * MAX_BAR_PCT;
+                const fk = formatK(d.rawValue);
+
+                return (
+                  <div
+                    key={d.key}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `${LABEL_COL_REM}rem 1fr`,
+                      alignItems: "center",
+                      gap: "0.55rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        font: "normal normal normal 0.875rem/1.05rem Noto Sans",
+                        color: "#8A8A8A",
+                        whiteSpace: "pre-line",
+                      }}
+                    >
+                      {d.label}
+                    </div>
+
+                    {/* ✅ Limita la barra perquè no “s’escapi” */}
+                    <div style={{ position: "relative", height: "0.38rem" }}>
+                      <div
+                        style={{
+                          height: "0.38rem",
+                          width: `${Math.max(0, Math.min(100, pct))}%`,
+                          background: d.color,
+                        }}
+                      />
+
+                      {/* ✅ text també limitat / no fa overflow */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: `${Math.max(0, Math.min(100, pct))}%`,
+                          top: "50%",
+                          transform: "translate(0.35rem, -50%)",
+                          font: "normal normal normal 0.875rem/1rem Noto Sans",
+                          color: "#8A8A8A",
+                          whiteSpace: "nowrap",
+                          pointerEvents: "none",
+                          maxWidth: "7.5rem",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {fk.value} {fk.unit}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ===========================
    MenuLateral
 =========================== */
@@ -376,8 +488,7 @@ export default function MenuLateral({
     internetYes: 0,
     internetNo: 0,
     connectionTypeCounts: null,
-
-    // ✅ NEW
+    perceivedQualityCounts: null,
     notConnectReasonsCounts: null,
   };
 
@@ -632,7 +743,36 @@ export default function MenuLateral({
 
                   <TypeOfConnectionCard counts={s.connectionTypeCounts} />
                 </>
-              ) : activeBottomFilter === "not_connect" ? (
+              ) 
+              : activeBottomFilter === "perceived_quality" ? (
+              <>
+              <InfoCard
+              icon="/img/menuLateral/Icon akar-wifi (1).png"
+              iconWidth="1.25rem"
+              iconHeight="1.06rem"
+              title={`${(s.internetYes || 0).toLocaleString()}`}
+              subtitle="Libraries connected to the internet"
+              detail={
+              s.totalPoints
+              ? `${Math.round(((s.internetYes || 0) / s.totalPoints) * 100)}% of mapped libraries`
+              : "N/A"
+              }
+              hasInfo={true}
+              progressBar={
+              s.totalPoints
+              ? {
+              colors: ["#3ED896", "#E0E0E0"],
+              widths: [
+              ((s.internetYes || 0) / s.totalPoints) * 100,
+              100 - ((s.internetYes || 0) / s.totalPoints) * 100,
+              ],
+              }
+              : null
+              }
+              />
+              <PerceivedQualityCard counts={s.perceivedQualityCounts} />
+              </>
+              ): activeBottomFilter === "not_connect" ? (
                 <>
                   <NotConnectedOverview internetNo={s.internetNo} totalPoints={s.totalPoints} />
                   <NotConnectedReasonsPie counts={s.notConnectReasonsCounts} />

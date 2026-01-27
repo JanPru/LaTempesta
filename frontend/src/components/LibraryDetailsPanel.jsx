@@ -84,6 +84,212 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
     );
   }
 
+     /* =========================================================
+   * ✅ PERCEIVED QUALITY MODE: nom + tipus + 3 rows (com captura)
+   * ========================================================= */
+  if (mode === "perceived_quality") {
+    // --- Columns ---
+    const PQ_COL =
+      "How would you rate the current state of digital infrastructure and devices in your library?\u00A0";
+
+    const IMPACT_COL =
+      "How has the unavailability of Internet connectivity affected your library's ability to provide services to users?";
+
+    const STABILITY_COL = "How stable is the Internet connection?";
+
+    // --- Helpers ---
+    const norm = (v) => String(v ?? "").trim();
+    const toUnknown = (v) => (norm(v) ? norm(v) : "Unknown");
+
+    // --- Perceived quality bucket from numeric 0-100 (same logic as MapPage) ---
+    const toNumberOrNull = (v) => {
+      if (v == null) return null;
+      const s = String(v).trim().replace(",", ".");
+      if (!s) return null;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const pqBucket = (() => {
+      // if precomputed exists, use it
+      const pre = String(p?.__pqBucket ?? "").trim();
+      if (pre) return pre;
+
+      const n = toNumberOrNull(p?.[PQ_COL]);
+      if (n == null) return "unknown";
+
+      if (n >= 0 && n <= 19) return "very_poor";
+      if (n >= 20 && n <= 49) return "poor";
+      if (n >= 50 && n <= 59) return "fair";
+      if (n >= 60 && n <= 79) return "good";
+      if (n >= 80 && n <= 100) return "excellent";
+      return "unknown";
+    })();
+
+    const PQ_META = {
+      very_poor: { label: "Very poor", color: "#F82055" },
+      poor: { label: "Poor", color: "#FF7A00" },
+      fair: { label: "Fair", color: "#FFD400" },
+      good: { label: "Good", color: "#8BE04E" },
+      excellent: { label: "Excellent", color: "#2EAD27" },
+      unknown: { label: "Unknown", color: "#20BBCE" },
+    };
+
+    const pqMeta = PQ_META[pqBucket] || PQ_META.unknown;
+
+    // --- Values ---
+    const impactValue = toUnknown(p?.[IMPACT_COL]);
+    const stabilityValue = toUnknown(p?.[STABILITY_COL]);
+
+    // --- UI bits (reuse same pattern as type_connect) ---
+    const Dot = ({ color }) => (
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: color,
+          display: "inline-block",
+          flexShrink: 0,
+          marginRight: 8,
+        }}
+      />
+    );
+
+    const InfoIcon = ({ text }) => (
+      <img
+        src="/img/menuLateral/Information.png"
+        alt="info"
+        title={text}
+        style={{
+          width: "0.69rem",
+          height: "0.69rem",
+          marginLeft: "0.375rem",
+          cursor: "default",
+          flexShrink: 0,
+          opacity: 0.85,
+        }}
+      />
+    );
+
+    const LabelWithInfo = ({ label, infoText }) => (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.375rem",
+          maxWidth: "14rem",
+        }}
+      >
+        <div
+          style={{
+            font: "normal normal 700 14px/16px Noto Sans",
+            color: "#4B4B4B",
+            lineHeight: "16px",
+            whiteSpace: "pre-line",
+          }}
+        >
+          {label}
+        </div>
+        {infoText ? <InfoIcon text={infoText} /> : null}
+      </div>
+    );
+
+    const InlineRow = ({ label, value, dotColor, infoText }) => (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          padding: "0.7rem 0",
+        }}
+      >
+        <LabelWithInfo label={label} infoText={infoText} />
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 0,
+            minWidth: 0,
+            flex: 1,
+          }}
+        >
+          {dotColor ? <Dot color={dotColor} /> : null}
+
+          <div
+            style={{
+              font: "normal normal normal 14px/16px Noto Sans",
+              color: "#4B4B4B",
+              textAlign: "right",
+              whiteSpace: "pre-line",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+              minWidth: 0,
+            }}
+          >
+            {String(value ?? "").trim() || "Unknown"}
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ width: "100%" }}>
+        {/* NAME */}
+        <div
+          style={{
+            font: "normal normal bold 20px/24px Noto Sans",
+            color: "#000000",
+            whiteSpace: "pre-line",
+          }}
+        >
+          {name}
+        </div>
+
+        {/* TYPE */}
+        <div
+          style={{
+            marginTop: "0.4rem",
+            font: "normal normal 600 12px/16px Noto Sans",
+            color: "#0F6641",
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+          }}
+        >
+          {type}
+        </div>
+
+        {/* DIVIDER */}
+        <div style={{ borderTop: "1px solid #DBDBDB", marginTop: "0.9rem" }} />
+
+        {/* 3 ROWS like screenshot */}
+        <div style={{ marginTop: "0.8rem" }}>
+          <InlineRow
+            label={"Perceived quality\nof digital\ninfrastructure"}
+            value={pqMeta.label}
+            dotColor={pqMeta.color}
+            infoText="Self-reported quality of digital infrastructure and devices in the library."
+          />
+
+          <InlineRow
+            label={"Impact of no\ninternet connectivity"}
+            value={impactValue}
+            infoText="How lack of internet affects the library’s ability to provide services."
+          />
+
+          <InlineRow
+            label={"Internet connection\nstability"}
+            value={stabilityValue}
+            infoText="How stable the library’s internet connection is."
+          />
+        </div>
+      </div>
+    );
+  }
+
   /* =========================================================
    * TYPE OF CONNECTION (for type_connect mode)
    * ========================================================= */

@@ -30,6 +30,48 @@ export default function MapPage() {
   // ✅ BOTTOM FILTER SELECTED
   const [activeBottomFilter, setActiveBottomFilter] = useState("library_status");
 
+    // =========================================================
+  // ✅ PERCEIVED QUALITY (0-100) column + bucket
+  // =========================================================
+  const PERCEIVED_QUALITY_COL =
+    "How would you rate the current state of digital infrastructure and devices in your library?";
+
+  const PQ_COLORS = {
+    very_poor: "#F82055",
+    poor: "#FF7A00",
+    fair: "#FFD400",
+    good: "#8BE04E",
+    excellent: "#2EAD27",
+    unknown: "#20BBCE",
+  };
+
+  const toNumberOrNull = (v) => {
+    if (v == null) return null;
+    const s = String(v).trim().replace(",", ".");
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const getPerceivedQualityBucketFromProps = (props) => {
+    const n = toNumberOrNull(props?.[PERCEIVED_QUALITY_COL]);
+    if (n == null) return "unknown";
+
+    if (n >= 0 && n <= 19) return "very_poor";
+    if (n >= 20 && n <= 49) return "poor";
+    if (n >= 50 && n <= 59) return "fair";
+    if (n >= 60 && n <= 79) return "good";
+    if (n >= 80 && n <= 100) return "excellent";
+
+    // fora rang
+    return "unknown";
+  };
+
+  const getPerceivedQualityColorFromProps = (props) => {
+    const b = props?.__pqBucket || getPerceivedQualityBucketFromProps(props);
+    return PQ_COLORS[b] || PQ_COLORS.unknown;
+  };
+
   // =========================================================
   // ✅ NOT CONNECT: reasons columns (exact headers)
   // =========================================================
@@ -87,6 +129,7 @@ export default function MapPage() {
     internetNo: 0,
     connectionTypeCounts: null,
     notConnectReasonsCounts: null,
+    perceivedQualityCounts: null,
   });
 
   const [countryStats, setCountryStats] = useState({
@@ -101,6 +144,7 @@ export default function MapPage() {
     internetNo: 0,
     connectionTypeCounts: null,
     notConnectReasonsCounts: null,
+    perceivedQualityCounts: null,
   });
 
   const [countryBBoxes, setCountryBBoxes] = useState(null);
@@ -350,6 +394,15 @@ export default function MapPage() {
     let internetYes = 0;
     let internetNo = 0;
 
+    const perceivedQualityCounts = {
+      very_poor: 0,
+      poor: 0,
+      fair: 0,
+      good: 0,
+      excellent: 0,
+      unknown: 0,
+    };
+
     const connectionTypeCounts = {
       optic_fiber: 0,
       dsl: 0,
@@ -373,6 +426,9 @@ export default function MapPage() {
       const acc = String(props["Does the library currently have Internet access?"] ?? "")
         .trim()
         .toLowerCase();
+      
+      const pq = props.__pqBucket || getPerceivedQualityBucketFromProps(props);
+      perceivedQualityCounts[pq] = (perceivedQualityCounts[pq] || 0) + 1;
 
       const isNo = acc === "no";
       if (acc === "yes") internetYes++;
@@ -432,6 +488,7 @@ export default function MapPage() {
       internetNo,
       connectionTypeCounts,
       notConnectReasonsCounts,
+      perceivedQualityCounts,
     };
   };
 
@@ -658,6 +715,7 @@ export default function MapPage() {
           header: true,
           skipEmptyLines: true,
           dynamicTyping: true,
+          transformHeader: (h) => String(h || "").replace(/\u00A0/g, " ").trim(),
         });
 
         const countrySet = new Set();
@@ -676,6 +734,7 @@ export default function MapPage() {
             const dlBucket = getDownloadBucket(props) || "unknown";
             const connBucket = primaryConnectionBucketFromProps(props);
             const reasonBucket = getNotConnectReasonBucketFromProps(props);
+            const pqBucket = getPerceivedQualityBucketFromProps(props);
 
             return {
               type: "Feature",
@@ -687,6 +746,7 @@ export default function MapPage() {
                 __dlBucket: dlBucket,
                 __connBucket: connBucket,
                 __reasonBucket: reasonBucket,
+                __pqBucket: pqBucket,
                 hasData: Boolean(props.name || props.address),
               },
             };
@@ -776,6 +836,9 @@ export default function MapPage() {
     if (activeBottomFilter === "not_connect") {
       return getNotConnectColorFromProps(props); // only "no" should be selectable anyway
     }
+    if (activeBottomFilter === "perceived_quality") {
+      return getPerceivedQualityColorFromProps(props);
+    }
 
     return getHaloColorFromProps(props);
   }, [selectedFeature, activeBottomFilter]);
@@ -851,6 +914,32 @@ export default function MapPage() {
             "multi",
             NOT_CONNECT_COLORS.multi,
             NOT_CONNECT_COLORS.unknown,
+          ],
+        ],
+      };
+    }
+    if (activeBottomFilter === "perceived_quality") {
+      return {
+        ...base,
+        "circle-color": [
+          "case",
+          ["boolean", ["feature-state", "hover"], false],
+          "#005FCC",
+
+          [
+            "match",
+            ["get", "__pqBucket"],
+            "very_poor",
+            PQ_COLORS.very_poor,
+            "poor",
+            PQ_COLORS.poor,
+            "fair",
+            PQ_COLORS.fair,
+            "good",
+            PQ_COLORS.good,
+            "excellent",
+            PQ_COLORS.excellent,
+            PQ_COLORS.unknown,
           ],
         ],
       };
@@ -959,12 +1048,12 @@ export default function MapPage() {
           <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
             <Layer {...LAYER_CONFIG.points} paint={pointsPaint} filter={pointsFilter} />
 
-            {/* ✅ Halo only in default mode */}
-            {selectedCountry !== "Worldwide" &&
-              activeBottomFilter !== "type_connect" &&
-              activeBottomFilter !== "not_connect" && (
-                <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
-              )}
+          {selectedCountry !== "Worldwide" &&
+          activeBottomFilter !== "type_connect" &&
+          activeBottomFilter !== "perceived_quality" &&
+          activeBottomFilter !== "not_connect" && (
+            <Layer {...LAYER_CONFIG.halo} beforeId={LAYER_CONFIG.points.id} />
+          )}
           </Source>
         )}
 
