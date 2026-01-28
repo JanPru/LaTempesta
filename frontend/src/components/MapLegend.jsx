@@ -1,5 +1,29 @@
 import React from "react";
 
+const LEGEND_WIDTH = 380; // ✅ unificat (mateix “tamany base” que library status)
+const BOX_STYLE = {
+  position: "absolute",
+  right: "18px",
+  bottom: "18px",
+  zIndex: 20,
+  background: "#FFFFFF",
+  borderRadius: 0,
+  boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+  padding: "12px 14px",
+  fontFamily: "Noto Sans, sans-serif",
+  userSelect: "none",
+  width: `${LEGEND_WIDTH}px`,
+  boxSizing: "border-box",
+};
+
+const TITLE_STYLE = {
+  textAlign: "left",
+  font: "normal normal bold 13px/16px Noto Sans",
+  color: "#000000",
+  marginBottom: "8px",
+  whiteSpace: "pre-line",
+};
+
 const COLORS = {
   status: {
     Connected: "#3ED896",
@@ -24,7 +48,7 @@ const COLORS = {
     Unknown: "#27C7D8",
   },
 
-  // ✅ not-connection reasons (colors from screenshot)
+  // ✅ not-connection reasons
   notConnect: {
     infrastructure: "#36A6D8",
     high_cost: "#FF6C00",
@@ -32,6 +56,16 @@ const COLORS = {
     digital_literacy: "#B3BE39",
     policy: "#9E65AC",
     multi: "#D83A8F",
+  },
+
+  // ✅ perceived quality (mateixos colors que al mapa)
+  perceivedQuality: {
+    very_poor: "#F82055",
+    poor: "#FF7A00",
+    fair: "#FFD400",
+    good: "#8BE04E",
+    excellent: "#2EAD27",
+    unknown: "#20BBCE",
   },
 };
 
@@ -50,9 +84,7 @@ function Dot({ color }) {
   );
 }
 
-/**
- * Punt verd + halo de color (com els del mapa)
- */
+/** Punt verd + halo de color (com els del mapa) */
 function DownloadDot({ haloColor }) {
   return (
     <span
@@ -91,19 +123,37 @@ function DownloadDot({ haloColor }) {
 
 function Row({ label, icon }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
       {icon}
       <span
         style={{
           textAlign: "left",
-          font: "normal normal normal 14px/25px Noto Sans",
+          font: "normal normal normal 13px/16px Noto Sans",
           letterSpacing: "0px",
           color: "#000000",
           opacity: 1,
+          whiteSpace: "normal", // ✅ wrap
+          lineHeight: "16px",
         }}
       >
         {label}
       </span>
+    </div>
+  );
+}
+
+function TwoColGrid({ children, columnGap = 16, rowGap = 8 }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        columnGap,
+        rowGap,
+        alignItems: "start",
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -114,122 +164,54 @@ export default function MapLegend({ mode = "library_status" }) {
   const isNotConnect =
     mode === "not_connect" || mode === "not_connected" || mode === "notconnect";
 
+  const isPerceivedQuality =
+    mode === "perceived_quality" || mode === "perceived" || mode === "pq";
+
+  // ✅ NOT CONNECT legend
   if (isNotConnect) {
     return (
-      <div
-        style={{
-          position: "absolute",
-          right: "18px",
-          bottom: "18px",
-          zIndex: 20,
-          background: "#FFFFFF",
-          borderRadius: 0,
-          boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-          padding: "12px 14px",
-          fontFamily: "Noto Sans, sans-serif",
-          userSelect: "none",
-        }}
-      >
-        {/* Title */}
-        <div
-          style={{
-            textAlign: "left",
-            font: "normal normal bold 14px/25px Noto Sans",
-            letterSpacing: "0px",
-            color: "#000000",
-            opacity: 1,
-            marginBottom: "6px",
-          }}
-        >
-          Not-connection reason
-        </div>
+      <div style={BOX_STYLE}>
+        <div style={TITLE_STYLE}>Not-connection reason</div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            columnGap: "22px",
-            rowGap: "20px",
-            alignItems: "start",
-            minWidth: "360px",
-          }}
-        >
+        <TwoColGrid columnGap={16} rowGap={10}>
           <Row
-            label="Infrastructure limitations"
+            label={"Infrastructure\nlimitations"}
             icon={<Dot color={COLORS.notConnect.infrastructure} />}
           />
           <Row
-            label="Digital literacy gaps"
+            label={"Digital literacy\ngaps"}
             icon={<Dot color={COLORS.notConnect.digital_literacy} />}
           />
 
+          <Row label="High cost" icon={<Dot color={COLORS.notConnect.high_cost} />} />
           <Row
-            label="High cost"
-            icon={<Dot color={COLORS.notConnect.high_cost} />}
-          />
-          <Row
-            label="Policy/Regulatory barriers"
+            label={"Policy/Regulatory\nbarriers"}
             icon={<Dot color={COLORS.notConnect.policy} />}
           />
 
           <Row
-            label="Electrical supply issues"
+            label={"Electrical supply\nissues"}
             icon={<Dot color={COLORS.notConnect.electrical} />}
           />
           <Row
-            label="More than one reason"
+            label={"More than one\nreason"}
             icon={<Dot color={COLORS.notConnect.multi} />}
           />
-        </div>
+        </TwoColGrid>
       </div>
     );
   }
 
-  // ✅ Type of connection legend (la captura)
+  // ✅ TYPE OF CONNECTION legend
   if (isTypeConnection) {
     return (
-      <div
-        style={{
-          position: "absolute",
-          right: "18px",
-          bottom: "18px",
-          zIndex: 20,
-          background: "#FFFFFF",
-          borderRadius: 0,
-          boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-          padding: "12px 14px",
-          fontFamily: "Noto Sans, sans-serif",
-          userSelect: "none",
-        }}
-      >
-        {/* Title */}
-        <div
-          style={{
-            textAlign: "left",
-            font: "normal normal bold 14px/25px Noto Sans",
-            letterSpacing: "0px",
-            color: "#000000",
-            opacity: 1,
-            marginBottom: "6px",
-          }}
-        >
-          Type of internet connection
-        </div>
+      <div style={BOX_STYLE}>
+        <div style={TITLE_STYLE}>Type of internet connection</div>
 
-        {/* Two columns like screenshot */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            columnGap: "18px",
-            rowGap: "6px",
-            alignItems: "start",
-            minWidth: "340px",
-          }}
-        >
+        <TwoColGrid columnGap={14} rowGap={8}>
           <Row label="Fiber optic" icon={<Dot color={COLORS.connection["Fiber optic"]} />} />
           <Row
-            label="Mobile data (3G, 4G, 5G)"
+            label={"Mobile data\n(3G, 4G, 5G)"}
             icon={<Dot color={COLORS.connection["Mobile data (3G, 4G, 5G)"]} />}
           />
 
@@ -240,50 +222,47 @@ export default function MapLegend({ mode = "library_status" }) {
           <Row label="Unknown" icon={<Dot color={COLORS.connection.Unknown} />} />
 
           <Row label="Cable" icon={<Dot color={COLORS.connection.Cable} />} />
-        </div>
+          {/* buit per mantenir la graella equilibrada */}
+          <div />
+        </TwoColGrid>
       </div>
     );
   }
 
-  // ✅ Default legend (status + download)
+  // ✅ PERCEIVED QUALITY legend (NOU)
+  if (isPerceivedQuality) {
+    return (
+      <div style={BOX_STYLE}>
+        <div style={TITLE_STYLE}>Perceived quality of internet access</div>
+
+        <TwoColGrid columnGap={16} rowGap={10}>
+          <Row label={"Very\npoor"} icon={<Dot color={COLORS.perceivedQuality.very_poor} />} />
+          <Row label="Good" icon={<Dot color={COLORS.perceivedQuality.good} />} />
+
+          <Row label="Poor" icon={<Dot color={COLORS.perceivedQuality.poor} />} />
+          <Row label="Excellent" icon={<Dot color={COLORS.perceivedQuality.excellent} />} />
+
+          <Row label="Fair" icon={<Dot color={COLORS.perceivedQuality.fair} />} />
+          <Row label="Unknown" icon={<Dot color={COLORS.perceivedQuality.unknown} />} />
+        </TwoColGrid>
+      </div>
+    );
+  }
+
+  // ✅ DEFAULT legend (status + download) — base reference size
   return (
-    <div
-      style={{
-        position: "absolute",
-        right: "18px",
-        bottom: "18px",
-        zIndex: 20,
-
-        background: "#FFFFFF",
-        borderRadius: 0,
-        boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-        padding: "12px 14px",
-
-        fontFamily: "Noto Sans, sans-serif",
-        color: "#4B4B4B",
-        userSelect: "none",
-      }}
-    >
+    <div style={BOX_STYLE}>
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "18px",
           alignItems: "start",
-          minWidth: "320px",
         }}
       >
         {/* LEFT: status */}
         <div>
-          <div
-            style={{
-              font: "normal normal bold 13px/16px Noto Sans",
-              color: "#000000",
-              marginBottom: "8px",
-            }}
-          >
-            Library status
-          </div>
+          <div style={TITLE_STYLE}>Library status</div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <Row label="Connected" icon={<Dot color={COLORS.status.Connected} />} />
@@ -294,15 +273,7 @@ export default function MapLegend({ mode = "library_status" }) {
 
         {/* RIGHT: download */}
         <div>
-          <div
-            style={{
-              font: "normal normal bold 13px/16px Noto Sans",
-              color: "#000000",
-              marginBottom: "2px",
-            }}
-          >
-            Average download speed
-          </div>
+          <div style={TITLE_STYLE}>Average download speed</div>
 
           <div
             style={{
@@ -310,6 +281,7 @@ export default function MapLegend({ mode = "library_status" }) {
               color: "#7A7A7A",
               marginBottom: "8px",
               textDecoration: "underline",
+              whiteSpace: "normal",
             }}
           >
             Global benchmark 20Mbps

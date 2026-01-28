@@ -51,6 +51,76 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   }
   if (!type) type = "PUBLIC LIBRARY";
 
+  /* =====================
+   * ✅ DATA SOURCE (year from Date Submitted)
+   * ===================== */
+  const DATE_SUBMITTED_COL = "Date Submitted";
+
+  const extractYear = (v) => {
+    const s = String(v ?? "").trim();
+    if (!s) return "";
+
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return String(d.getFullYear());
+
+    const m = s.match(/\b(19|20)\d{2}\b/);
+    return m ? m[0] : "";
+  };
+
+  const submittedYear = extractYear(p?.[DATE_SUBMITTED_COL]) || "Unknown";
+  const dataSourceText = `LBM, ${submittedYear}`;
+
+  const DataSourceRow = () => (
+    <div
+      style={{
+        marginTop: "0.35rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "1.25rem",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "left",
+          font: "normal normal 600 12px/16px Noto Sans",
+          letterSpacing: "0px",
+          color: "#717171",
+          opacity: 1,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.35rem",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        Data source
+        <img
+          src="/img/menuLateral/Information.png"
+          alt="info"
+          title="Survey data source and submission year."
+          style={{ width: "0.69rem", height: "0.69rem", opacity: 0.85 }}
+        />
+      </div>
+
+      <div
+        style={{
+          textAlign: "left",
+          font: "normal normal normal 12px/16px Noto Sans",
+          letterSpacing: "0px",
+          color: "#717171",
+          opacity: 1,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          minWidth: 0,
+          flex: 1,
+        }}
+      >
+        {dataSourceText}
+      </div>
+    </div>
+  );
+
   /* =========================================================
    * ✅ NOT CONNECT MODE: només nom + tipus i ja està
    * ========================================================= */
@@ -84,8 +154,8 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
     );
   }
 
-     /* =========================================================
-   * ✅ PERCEIVED QUALITY MODE: nom + tipus + 3 rows (com captura)
+  /* =========================================================
+   * ✅ PERCEIVED QUALITY MODE: nom + tipus + data source + 3 rows
    * ========================================================= */
   if (mode === "perceived_quality") {
     // --- Columns ---
@@ -111,7 +181,6 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
     };
 
     const pqBucket = (() => {
-      // if precomputed exists, use it
       const pre = String(p?.__pqBucket ?? "").trim();
       if (pre) return pre;
 
@@ -262,6 +331,9 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
           {type}
         </div>
 
+        {/* ✅ DATA SOURCE */}
+        <DataSourceRow />
+
         {/* DIVIDER */}
         <div style={{ borderTop: "1px solid #DBDBDB", marginTop: "0.9rem" }} />
 
@@ -330,7 +402,7 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
 
   const CONNECTION_META = {
     optic_fiber: { label: "Fiber optic", color: "#FF2AAE" },
-    dsl: { label: "DSL", color: "#FF8A00" },
+    dsl: { label: "DSL", color: "#FF7A00" }, // keep your existing if you had different
     satellite: { label: "Satellite", color: "#5CFF7A" },
     cable: { label: "Cable", color: "#D5E600" },
     mobile_data: { label: "Mobile data", color: "#1E5BFF" },
@@ -647,6 +719,9 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
       >
         {type}
       </div>
+
+      {/* ✅ DATA SOURCE (applies to all modes except not_connect) */}
+      <DataSourceRow />
 
       {/* DIVIDER */}
       <div style={{ borderTop: "1px solid #DBDBDB", marginTop: "0.9rem" }} />
