@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import FilterHeader from "./FilterHeader";
 import InfoCard from "./InfoCard";
 import BottomFilters from "./BottomFilters";
@@ -67,7 +67,6 @@ function NotConnectedReasonsPie({ counts }) {
     };
   }, [counts]);
 
-  // 🔥 més gran
   const size = 200;
   const cx = size / 2;
   const cy = size / 2;
@@ -92,7 +91,6 @@ function NotConnectedReasonsPie({ counts }) {
 
   return (
     <div style={{ marginTop: "0.5rem" }}>
-      {/* ✅ Nou títol amb icona */}
       <div style={TITLE_STYLE}>
         <img
           src="/img/menuLateral/Icon akar-triangle-alert.png"
@@ -102,77 +100,75 @@ function NotConnectedReasonsPie({ counts }) {
         <span>Reasons for the lack of connection</span>
       </div>
 
-      {/* ✅ Pie centrat i sense llegenda */}
       <div style={{ display: "flex", justifyContent: "center", marginTop: "0.85rem" }}>
-  <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-    {items.data.map((s) => {
-      // ✅ cas 100% (un sol slice) -> amb arc SVG no es pinta, fem circle
-      const isFull = s.pct >= 99.999;
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {items.data.map((s) => {
+            const isFull = s.pct >= 99.999;
 
-      if (isFull) {
-        const tx = cx;
-        const ty = cy;
+            if (isFull) {
+              const tx = cx;
+              const ty = cy;
 
-        return (
-          <g key={s.key}>
-            <circle cx={cx} cy={cy} r={r} fill={s.color} />
-            <text
-              x={tx}
-              y={ty}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              style={{
-                fontFamily: "Noto Sans",
-                fontSize: "13px",
-                fill: "#FFFFFF",
-                fontWeight: 600,
-              }}
-            >
-              100%
-            </text>
-          </g>
-        );
-      }
+              return (
+                <g key={s.key}>
+                  <circle cx={cx} cy={cy} r={r} fill={s.color} />
+                  <text
+                    x={tx}
+                    y={ty}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{
+                      fontFamily: "Noto Sans",
+                      fontSize: "13px",
+                      fill: "#FFFFFF",
+                      fontWeight: 600,
+                    }}
+                  >
+                    100%
+                  </text>
+                </g>
+              );
+            }
 
-      // ✅ cas normal (més d’un slice)
-      const start = angle;
-      const end = angle + (s.pct / 100) * 360;
-      angle = end;
+            const start = angle;
+            const end = angle + (s.pct / 100) * 360;
+            angle = end;
 
-      const mid = (start + end) / 2;
-      const tx = polarToCartesian(cx, cy, r * 0.58, mid).x;
-      const ty = polarToCartesian(cx, cy, r * 0.58, mid).y;
+            const mid = (start + end) / 2;
+            const tx = polarToCartesian(cx, cy, r * 0.58, mid).x;
+            const ty = polarToCartesian(cx, cy, r * 0.58, mid).y;
 
-      const pctText =
-        s.pct >= 10
-          ? `${Math.round(s.pct)}%`
-          : `${(Math.round(s.pct * 10) / 10).toString().replace(".", ",")}%`;
+            const pctText =
+              s.pct >= 10
+                ? `${Math.round(s.pct)}%`
+                : `${(Math.round(s.pct * 10) / 10).toString().replace(".", ",")}%`;
 
-      return (
-        <g key={s.key}>
-          <path d={describeArc(cx, cy, r, start, end)} fill={s.color} stroke="none" />
-          <text
-            x={tx}
-            y={ty}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            style={{
-              fontFamily: "Noto Sans",
-              fontSize: "13px",
-              fill: "#FFFFFF",
-              fontWeight: 600,
-            }}
-          >
-            {pctText}
-          </text>
-        </g>
-      );
-    })}
-  </svg>
-</div>
+            return (
+              <g key={s.key}>
+                <path d={describeArc(cx, cy, r, start, end)} fill={s.color} stroke="none" />
+                <text
+                  x={tx}
+                  y={ty}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{
+                    fontFamily: "Noto Sans",
+                    fontSize: "13px",
+                    fill: "#FFFFFF",
+                    fontWeight: 600,
+                  }}
+                >
+                  {pctText}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
     </div>
   );
 }
+
 function NotConnectedOverview({ internetNo, totalPoints }) {
   const fk = formatK(internetNo || 0);
   return (
@@ -226,10 +222,6 @@ function NotConnectedOverview({ internetNo, totalPoints }) {
     </div>
   );
 }
-
-/* ===========================
-   TYPE CONNECT card (igual)
-=========================== */
 
 function TypeOfConnectionCard({ counts }) {
   const c = counts || {};
@@ -350,10 +342,9 @@ function PerceivedQualityCard({ counts }) {
 
   const max = Math.max(...data.map((d) => d.rawValue), 1);
 
-  // ✅ igual que TypeOfConnectionCard
   const MAX_BAR_PCT = 85;
   const CHART_SHIFT_LEFT = 0.85;
-  const LABEL_COL_REM = 3.7; // igual que type_connect
+  const LABEL_COL_REM = 3.7;
 
   return (
     <div style={{ position: "relative" }}>
@@ -371,7 +362,6 @@ function PerceivedQualityCard({ counts }) {
         />
 
         <div style={{ flex: 1 }}>
-          {/* ✅ títol amb salt de línia + mateix estil */}
           <div
             style={{
               font: "normal normal bold 1.25rem/1.56rem Noto Sans",
@@ -409,7 +399,6 @@ function PerceivedQualityCard({ counts }) {
                       {d.label}
                     </div>
 
-                    {/* ✅ Limita la barra perquè no “s’escapi” */}
                     <div style={{ position: "relative", height: "0.38rem" }}>
                       <div
                         style={{
@@ -419,7 +408,6 @@ function PerceivedQualityCard({ counts }) {
                         }}
                       />
 
-                      {/* ✅ text també limitat / no fa overflow */}
                       <div
                         style={{
                           position: "absolute",
@@ -475,6 +463,19 @@ export default function MenuLateral({
     typeOfLibrary: "Type of library",
   });
 
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const showCountriesCount = selectedCountry === "Worldwide";
 
   const s = stats || {
@@ -510,6 +511,303 @@ export default function MenuLateral({
     ${AFTER_CARDS_MARGIN_REM}rem
   )`;
 
+  // Mobile styles
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: "100%",
+          height: mobileExpanded ? "70vh" : "35vh",
+          maxHeight: mobileExpanded ? "70vh" : "35vh",
+          background: "#FFFFFF",
+          opacity: 0.95,
+          transition: "all 0.3s ease",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+        }}
+      >
+        {/* Arrow toggle at the top - stays fixed */}
+        <div
+          onClick={() => setMobileExpanded(!mobileExpanded)}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "0.75rem",
+            cursor: "pointer",
+            borderBottom: "1px solid #DBDBDB",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{
+              transform: mobileExpanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <path
+              d="M7 14l5-5 5 5"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        {/* Scrollable content */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            padding: "1rem 1rem 1.5rem 1rem",
+          }}
+        >
+          <FilterHeader
+            filters={filters}
+            countries={countries}
+            selectedCountry={selectedCountry}
+            onSelectCountry={onSelectCountry}
+            mobile={true}
+          />
+
+          <div
+            style={{
+              margin: "1rem 0",
+              border: "1px solid #DBDBDB",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1rem",
+            }}
+          >
+            <div
+              style={{
+                font: "normal normal normal 1rem/1.56rem Noto Sans",
+                color: "#000000",
+              }}
+            >
+              {selectedCountry}
+              {showCountriesCount && (
+                <span style={{ marginLeft: "1rem" }}>{countriesCount} countries</span>
+              )}
+            </div>
+
+            <img
+              src="/img/menuLateral/Share.png"
+              alt="Share"
+              style={{
+                width: "0.875rem",
+                height: "0.94rem",
+                cursor: "pointer",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              margin: "1rem 0",
+              border: "1px solid #DBDBDB",
+            }}
+          />
+
+          {selectedLibrary ? (
+            <div style={{ marginTop: "1rem" }}>
+              <LibraryDetailsPanel library={selectedLibrary} mode={activeBottomFilter} />
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  font: "normal normal bold 1.25rem/1.56rem Noto Sans",
+                  color: "#000000",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Libraries
+                <br />
+                Boosting Connectivity
+              </div>
+
+              <div
+                style={{
+                  font: "normal normal normal 1rem/1.56rem Noto Sans",
+                  color: "#4B4B4B",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                An open & live global map of libraries and their connectivity
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                {activeBottomFilter === "type_connect" ? (
+                  <>
+                    <InfoCard
+                      icon="/img/menuLateral/Icon akar-wifi (1).png"
+                      iconWidth="1.25rem"
+                      iconHeight="1.06rem"
+                      title={`${(s.internetYes || 0).toLocaleString()}`}
+                      subtitle="Libraries connected to the internet"
+                      detail={
+                        s.totalPoints
+                          ? `${Math.round(((s.internetYes || 0) / s.totalPoints) * 100)}% of mapped libraries`
+                          : "N/A"
+                      }
+                      hasInfo={true}
+                      progressBar={
+                        s.totalPoints
+                          ? {
+                              colors: ["#3ED896", "#E0E0E0"],
+                              widths: [
+                                ((s.internetYes || 0) / s.totalPoints) * 100,
+                                100 - ((s.internetYes || 0) / s.totalPoints) * 100,
+                              ],
+                            }
+                          : null
+                      }
+                    />
+
+                    <TypeOfConnectionCard counts={s.connectionTypeCounts} />
+                  </>
+                ) 
+                : activeBottomFilter === "perceived_quality" ? (
+                <>
+                <InfoCard
+                icon="/img/menuLateral/Icon akar-wifi (1).png"
+                iconWidth="1.25rem"
+                iconHeight="1.06rem"
+                title={`${(s.internetYes || 0).toLocaleString()}`}
+                subtitle="Libraries connected to the internet"
+                detail={
+                s.totalPoints
+                ? `${Math.round(((s.internetYes || 0) / s.totalPoints) * 100)}% of mapped libraries`
+                : "N/A"
+                }
+                hasInfo={true}
+                progressBar={
+                s.totalPoints
+                ? {
+                colors: ["#3ED896", "#E0E0E0"],
+                widths: [
+                ((s.internetYes || 0) / s.totalPoints) * 100,
+                100 - ((s.internetYes || 0) / s.totalPoints) * 100,
+                ],
+                }
+                : null
+                }
+                />
+                <PerceivedQualityCard counts={s.perceivedQualityCounts} />
+                </>
+                ): activeBottomFilter === "not_connect" ? (
+                  <>
+                    <NotConnectedOverview internetNo={s.internetNo} totalPoints={s.totalPoints} />
+                    <NotConnectedReasonsPie counts={s.notConnectReasonsCounts} />
+                  </>
+                ) : (
+                  <>
+                    <InfoCard
+                      icon="/img/menuLateral/Icon core-location-pin.png"
+                      iconWidth="0.94rem"
+                      iconHeight="1.31rem"
+                      title={`${(s.totalPoints || 0).toLocaleString()}`}
+                      subtitle="Libraries location mapped"
+                      detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
+                    />
+
+                    <InfoCard
+                      icon="/img/menuLateral/Icon akar-wifi (1).png"
+                      iconWidth="1.25rem"
+                      iconHeight="1.06rem"
+                      title={`${(s.connectivityMapped || 0).toLocaleString()}`}
+                      subtitle="Libraries connectivity status mapped"
+                      detail={
+                        s.totalPoints
+                          ? `${Math.round(((s.connectivityMapped || 0) / s.totalPoints) * 100)}% of mapped libraries`
+                          : "N/A"
+                      }
+                      hasInfo={true}
+                      progressBar={
+                        s.totalPoints
+                          ? {
+                              colors: ["#3ED896", "#E0E0E0"],
+                              widths: [
+                                ((s.connectivityMapped || 0) / s.totalPoints) * 100,
+                                100 - ((s.connectivityMapped || 0) / s.totalPoints) * 100,
+                              ],
+                            }
+                          : null
+                      }
+                    />
+
+                    <InfoCard
+                      icon="/img/menuLateral/Icon core-cloud-download.png"
+                      iconWidth="1.25rem"
+                      iconHeight="1.06rem"
+                      title={`${(s.goodDownload || 0).toLocaleString()}`}
+                      subtitle="Libraries with good download speed"
+                      detail={
+                        s.downloadMeasured
+                          ? `of ${s.downloadMeasured.toLocaleString()} libraries inspected`
+                          : "No download data detected"
+                      }
+                      hasInfo={true}
+                      progressBar={
+                        s.downloadMeasured
+                          ? {
+                              colors: ["#F82055", "#F9A825", "#3ED896"],
+                              widths: [
+                                (s.dlRed / s.downloadMeasured) * 100,
+                                (s.dlOrange / s.downloadMeasured) * 100,
+                                (s.dlGreen / s.downloadMeasured) * 100,
+                              ],
+                            }
+                          : null
+                      }
+                    />
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          <div style={{ marginTop: "1.5rem" }}>
+            <BottomFilters
+              isLoading={isLoading}
+              embedded
+              activeId={activeBottomFilter}
+              onChange={(id) => onChangeBottomFilter?.(id)}
+            />
+          </div>
+
+          <div style={{ height: "1rem" }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop styles (original)
   const panelLeft = isOpen ? "0rem" : `-${PANEL_WIDTH_REM}rem`;
   const tabLeft = isOpen ? `calc(${PANEL_WIDTH_REM}rem - 0.01rem)` : "0rem";
   const arrowRotate = isOpen ? "rotate(90deg)" : "rotate(-90deg)";

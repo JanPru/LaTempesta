@@ -10,6 +10,7 @@ export default function FilterHeader({
   selectedCountry = "Worldwide",
   countries = [],
   onSelectCountry,
+  mobile = false,
 }) {
   const [openCountry, setOpenCountry] = useState(false);
 
@@ -21,12 +22,12 @@ export default function FilterHeader({
   return (
     <div
       style={{
-        position: "absolute",
-        top: "3%",
+        position: mobile ? "relative" : "absolute",
+        top: mobile ? "0" : "3%",
         left: "0",
         width: "100%",
-        paddingLeft: "9.17%",
-        paddingRight: "9.17%",
+        paddingLeft: mobile ? "0" : "9.17%",
+        paddingRight: mobile ? "0" : "9.17%",
         boxSizing: "border-box",
       }}
     >
