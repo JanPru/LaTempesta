@@ -5,6 +5,7 @@ import React, { useState } from "react";
  * - El value mostra SEMPRE tot el text
  * - Fa salts de línia correctes
  * - Totalment a prova de resizes
+ * - Info icons amb tooltips als labels
  */
 
 function Chevron({ open }) {
@@ -28,6 +29,68 @@ function Chevron({ open }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+function InfoIconWithTooltip({ text }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <img
+        src="/img/menuLateral/Information.png"
+        alt="info"
+        style={{
+          width: "0.69rem",
+          height: "0.69rem",
+          cursor: "default",
+          opacity: 0.85,
+        }}
+      />
+
+      {showTooltip && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            marginBottom: "0.5rem",
+            background: "#E2E2E2",
+            color: "#4B4B4B",
+            padding: "0.5rem 0.625rem",
+            font: "normal normal normal 0.75rem/1rem Noto Sans",
+            whiteSpace: "normal",
+            width: "10rem",
+            maxWidth: "10rem",
+            boxSizing: "border-box",
+            boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
+            zIndex: 100,
+            textAlign: "left",
+          }}
+        >
+          {text}
+          {/* Triangle */}
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "0.375rem solid transparent",
+              borderRight: "0.375rem solid transparent",
+              borderTop: "0.375rem solid #E2E2E2",
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -96,17 +159,26 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
                 padding: "0.5rem 0",
               }}
             >
-              {/* Label */}
+              {/* Label with optional info icon */}
               <div
                 style={{
-                  font: "normal normal 600 14px/16px Noto Sans",
-                  color: "#4B4B4B",
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
                   flexShrink: 0,
                   maxWidth: "14rem",
                 }}
               >
-                {r.label}
+                <div
+                  style={{
+                    font: "normal normal 600 14px/16px Noto Sans",
+                    color: "#4B4B4B",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {r.label}
+                </div>
+                {r.infoText && <InfoIconWithTooltip text={r.infoText} />}
               </div>
 
               {/* Value (wrap safe) */}

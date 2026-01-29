@@ -25,7 +25,7 @@ export default function BottomFilters({
         id: "library_status",
         icon: "/img/menuLateral/Icon akar-wifi (1).png",
         label: "Library status",
-        iconStyle: { width: "1.5rem", height: "1.06rem" },
+        iconStyle: { width: "1.25rem", height: "auto", objectFit: "contain" },
         infoText: "Library status of the library",
       },
       {

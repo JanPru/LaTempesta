@@ -1046,7 +1046,11 @@ export default function MapPage() {
 
         {geojson && (
           <Source id="libraries-source" type="geojson" data={geojson} promoteId="id">
-            <Layer {...LAYER_CONFIG.points} paint={pointsPaint} filter={pointsFilter} />
+            <Layer 
+              {...LAYER_CONFIG.points} 
+              paint={pointsPaint} 
+              filter={pointsFilter ?? ["all"]}
+            />
 
           {selectedCountry !== "Worldwide" &&
           activeBottomFilter !== "type_connect" &&

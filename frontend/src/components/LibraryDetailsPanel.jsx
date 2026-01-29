@@ -1,5 +1,70 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import LibrarySectionCard from "./LibrarySectionCard";
+
+/* =====================
+ * Shared InfoIconWithTooltip component
+ * ===================== */
+function InfoIconWithTooltip({ text }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <img
+        src="/img/menuLateral/Information.png"
+        alt="info"
+        style={{
+          width: "0.69rem",
+          height: "0.69rem",
+          cursor: "default",
+          opacity: 0.85,
+        }}
+      />
+
+      {showTooltip && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            marginBottom: "0.5rem",
+            background: "#E2E2E2",
+            color: "#4B4B4B",
+            padding: "0.5rem 0.625rem",
+            font: "normal normal normal 0.75rem/1rem Noto Sans",
+            whiteSpace: "normal",
+            width: "10rem",
+            maxWidth: "10rem",
+            boxSizing: "border-box",
+            boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
+            zIndex: 100,
+            textAlign: "left",
+          }}
+        >
+          {text}
+          {/* Triangle */}
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "0.375rem solid transparent",
+              borderRight: "0.375rem solid transparent",
+              borderTop: "0.375rem solid #E2E2E2",
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LibraryDetailsPanel({ library, mode = "library_status" }) {
   const p = library?.properties || {};
@@ -225,27 +290,11 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
       />
     );
 
-    const InfoIcon = ({ text }) => (
-      <img
-        src="/img/menuLateral/Information.png"
-        alt="info"
-        title={text}
-        style={{
-          width: "0.69rem",
-          height: "0.69rem",
-          marginLeft: "0.375rem",
-          cursor: "default",
-          flexShrink: 0,
-          opacity: 0.85,
-        }}
-      />
-    );
-
     const LabelWithInfo = ({ label, infoText }) => (
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "center",
           gap: "0.375rem",
           maxWidth: "14rem",
         }}
@@ -260,7 +309,7 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
         >
           {label}
         </div>
-        {infoText ? <InfoIcon text={infoText} /> : null}
+        {infoText ? <InfoIconWithTooltip text={infoText} /> : null}
       </div>
     );
 
@@ -461,27 +510,11 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
     />
   );
 
-  const InfoIcon = ({ text }) => (
-    <img
-      src="/img/menuLateral/Information.png"
-      alt="info"
-      title={text}
-      style={{
-        width: "0.69rem",
-        height: "0.69rem",
-        marginLeft: "0.375rem",
-        cursor: "default",
-        flexShrink: 0,
-        opacity: 0.85,
-      }}
-    />
-  );
-
   const LabelWithInfo = ({ label, infoText }) => (
     <div
       style={{
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         gap: "0.375rem",
         maxWidth: "14rem",
       }}
@@ -496,7 +529,7 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
       >
         {label}
       </div>
-      {infoText ? <InfoIcon text={infoText} /> : null}
+      {infoText ? <InfoIconWithTooltip text={infoText} /> : null}
     </div>
   );
 
@@ -568,8 +601,8 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   }, [p]);
 
   const rowsBasic = [
-    { label: "Staff members", value: staffValue },
-    { label: "Main target", value: mainTargetValue },
+    { label: "Staff members", value: staffValue, infoText: "Number of full-time equivalent staff working at the library." },
+    { label: "Main target", value: mainTargetValue, infoText: "Primary audience groups that the library serves." },
   ];
 
   /* =====================
@@ -632,10 +665,10 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   const usersValue = hasValue(USERS_KEY) ? String(p[USERS_KEY]) : "N/A";
 
   const rowsInternet = [
-    { label: "Availability", value: availabilityValue },
-    { label: "Devices available", value: devicesAvailableValue },
-    { label: "Devices used", value: devicesUsedValue },
-    { label: "Users", value: usersValue },
+    { label: "Availability", value: availabilityValue, infoText: "Hours per day that internet is available to users." },
+    { label: "Devices available", value: devicesAvailableValue, infoText: "Number of computers/devices with internet access for users." },
+    { label: "Devices used", value: devicesUsedValue, infoText: "Types of devices primarily used to access the internet." },
+    { label: "Users", value: usersValue, infoText: "Approximate daily users accessing library internet." },
   ];
 
   /* =====================
@@ -682,9 +715,9 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   const remoteAccessValue = useMemo(() => getStr(REMOTE_ACCESS_KEY) || "N/A", [p]);
 
   const rowsDigital = [
-    { label: "Type", value: digitalTypesValue },
-    { label: "Digital resources available", value: digitalAvailableValue },
-    { label: "Remote access", value: remoteAccessValue },
+    { label: "Type", value: digitalTypesValue, infoText: "Types of digital resources available at the library." },
+    { label: "Digital resources available", value: digitalAvailableValue, infoText: "Approximate number of digital resources in the collection." },
+    { label: "Remote access", value: remoteAccessValue, infoText: "Whether digital resources can be accessed outside library premises." },
   ];
 
   const rowsCapabilities = [];

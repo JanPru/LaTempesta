@@ -178,10 +178,11 @@ function NotConnectedOverview({ internetNo, totalPoints }) {
           src="/img/menuLateral/Icon akar-wifi (1).png"
           alt=""
           style={{
-            width: "1.5rem",
-            height: "1.06rem",
+            width: "1.25rem",
+            height: "auto",
             marginTop: "0.25rem",
             flexShrink: 0,
+            objectFit: "contain",
           }}
         />
 
@@ -248,8 +249,8 @@ function TypeOfConnectionCard({ counts }) {
           src="/img/menuLateral/Icon akar-wifi (1).png"
           alt=""
           style={{
-            width: "1.5rem",
-            height: "1.3rem",
+            width: "1.25rem",
+            height: "auto",
             marginTop: "0.22rem",
             flexShrink: 0,
             objectFit: "contain",
@@ -667,7 +668,7 @@ export default function MenuLateral({
                     <InfoCard
                       icon="/img/menuLateral/Icon akar-wifi (1).png"
                       iconWidth="1.25rem"
-                      iconHeight="1.06rem"
+                      iconHeight="auto"
                       title={`${(s.internetYes || 0).toLocaleString()}`}
                       subtitle="Libraries connected to the internet"
                       detail={
@@ -697,7 +698,7 @@ export default function MenuLateral({
                 <InfoCard
                 icon="/img/menuLateral/Icon akar-wifi (1).png"
                 iconWidth="1.25rem"
-                iconHeight="1.06rem"
+                iconHeight="auto"
                 title={`${(s.internetYes || 0).toLocaleString()}`}
                 subtitle="Libraries connected to the internet"
                 detail={
@@ -739,7 +740,7 @@ export default function MenuLateral({
                     <InfoCard
                       icon="/img/menuLateral/Icon akar-wifi (1).png"
                       iconWidth="1.25rem"
-                      iconHeight="1.06rem"
+                      iconHeight="auto"
                       title={`${(s.connectivityMapped || 0).toLocaleString()}`}
                       subtitle="Libraries connectivity status mapped"
                       detail={
@@ -1017,7 +1018,7 @@ export default function MenuLateral({
                   <InfoCard
                     icon="/img/menuLateral/Icon akar-wifi (1).png"
                     iconWidth="1.25rem"
-                    iconHeight="1.06rem"
+                    iconHeight="auto"
                     title={`${(s.internetYes || 0).toLocaleString()}`}
                     subtitle="Libraries connected to the internet"
                     detail={
@@ -1047,7 +1048,7 @@ export default function MenuLateral({
               <InfoCard
               icon="/img/menuLateral/Icon akar-wifi (1).png"
               iconWidth="1.25rem"
-              iconHeight="1.06rem"
+              iconHeight="auto"
               title={`${(s.internetYes || 0).toLocaleString()}`}
               subtitle="Libraries connected to the internet"
               detail={
@@ -1089,7 +1090,7 @@ export default function MenuLateral({
                   <InfoCard
                     icon="/img/menuLateral/Icon akar-wifi (1).png"
                     iconWidth="1.25rem"
-                    iconHeight="1.06rem"
+                    iconHeight="auto"
                     title={`${(s.connectivityMapped || 0).toLocaleString()}`}
                     subtitle="Libraries connectivity status mapped"
                     detail={

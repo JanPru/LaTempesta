@@ -189,7 +189,7 @@ export default function Topbar() {
 // maintained for consistency with the rest of the codebase.
 const styles = {
   header: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9FAFB",
     position: "sticky",
     top: 0,
     zIndex: 1000,

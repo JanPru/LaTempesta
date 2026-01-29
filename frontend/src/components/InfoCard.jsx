@@ -30,6 +30,7 @@ export default function InfoCard({
             height: iconHeight,
             marginTop: "0.31rem",
             flexShrink: 0,
+            objectFit: "contain",
           }}
         />
 

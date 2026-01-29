@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import StatBox from "../components/StatBox";
 import AnimatedNetwork from "../components/AnimatedNetwork";
+import Papa from "papaparse";
 
 /* ---------- Hook media query ---------- */
 function useMediaQuery(query) {
@@ -18,15 +19,118 @@ function useMediaQuery(query) {
   return matches;
 }
 
+/* ---------- Stats computation helpers ---------- */
+const CONNECTION_COL = "What type of internet connection does your library have?";
+const PERCEIVED_QUALITY_COL = "How would you rate the current state of digital infrastructure and devices in your library?";
+
+const toNumberOrNull = (v) => {
+  if (v == null) return null;
+  const s = String(v).trim().replace(",", ".");
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
+
+const getPerceivedQualityBucket = (props) => {
+  const n = toNumberOrNull(props?.[PERCEIVED_QUALITY_COL]);
+  if (n == null) return "unknown";
+  if (n >= 0 && n <= 19) return "very_poor";
+  if (n >= 20 && n <= 49) return "poor";
+  if (n >= 50 && n <= 59) return "fair";
+  if (n >= 60 && n <= 79) return "good";
+  if (n >= 80 && n <= 100) return "excellent";
+  return "unknown";
+};
+
+const splitMulti = (raw) => {
+  return String(raw ?? "")
+    .split(/[,;/|]+/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
+const bucketConnectionType = (token) => {
+  const t = String(token ?? "").toLowerCase().trim();
+  if (!t) return "unknown";
+  if (t.includes("dsl") || t.includes("adsl") || t.includes("vdsl")) return "dsl";
+  if (t.includes("optic") || t.includes("fiber") || t.includes("fibre")) return "optic_fiber";
+  if (t.includes("satellite") || t.includes("sat")) return "satellite";
+  if (t.includes("cable") || t.includes("coax")) return "cable";
+  if (t.includes("mobile") || t.includes("cell") || t.includes("3g") || t.includes("4g") || t.includes("5g") || t.includes("lte")) return "mobile_data";
+  if (t.includes("other")) return "other";
+  if (t === "unknown" || t === "n/a" || t === "na" || t === "none") return "unknown";
+  return "other";
+};
+
 export default function Home() {
   const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const isMdUp = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/stats")
-      .then((res) => res.json())
-      .then(setStats)
-      .catch((err) => console.error(err));
+    const loadStats = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/arxiu_sortida.csv");
+        if (!res.ok) throw new Error("Failed to load CSV");
+
+        const text = await res.text();
+        const parsed = Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+          transformHeader: (h) => String(h || "").replace(/\u00A0/g, " ").trim(),
+        });
+
+        let internetYes = 0;
+        let dslCount = 0;
+        let goodOrExcellent = 0;
+        let totalWithQuality = 0;
+
+        for (const row of parsed.data || []) {
+          // Count libraries connected to internet
+          const internetAccess = String(row["Does the library currently have Internet access?"] ?? "").trim().toLowerCase();
+          if (internetAccess === "yes") {
+            internetYes++;
+          }
+
+          // Count DSL connections
+          const rawConn = row[CONNECTION_COL];
+          const tokens = splitMulti(rawConn);
+          for (const token of tokens) {
+            if (bucketConnectionType(token) === "dsl") {
+              dslCount++;
+              break; // Count library once even if multiple DSL entries
+            }
+          }
+
+          // Count perceived quality
+          const qualityBucket = getPerceivedQualityBucket(row);
+          if (qualityBucket !== "unknown") {
+            totalWithQuality++;
+            if (qualityBucket === "good" || qualityBucket === "excellent") {
+              goodOrExcellent++;
+            }
+          }
+        }
+
+        const happyPercentage = totalWithQuality > 0 
+          ? Math.round((goodOrExcellent / totalWithQuality) * 100) 
+          : 0;
+
+        setStats({
+          librariesConnected: internetYes,
+          librariesDSL: dslCount,
+          happyPercentage: happyPercentage,
+        });
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error loading stats:", err);
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
   }, []);
 
   const networkPosition = {
@@ -34,15 +138,25 @@ export default function Home() {
     horizontalOffset: -40,
   };
 
+  // Format number to k (thousands)
+  const formatK = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1000) return { value: Math.round(v / 1000), unit: "k" };
+    return { value: v, unit: "" };
+  };
+
+  const connectedFormatted = formatK(stats?.librariesConnected || 0);
+  const dslFormatted = formatK(stats?.librariesDSL || 0);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: "80px" }}>
 
       {/* HERO */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center relative">
 
           {/* TEXT */}
-          <div className="order-1">
+          <div className="order-1" style={{ marginTop: "-40px" }}>
             <h1 style={styles.heroTitle}>Libraries Boosting Connectivity</h1>
             <p style={styles.heroText}>
               Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
@@ -82,8 +196,8 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 py-2">
         <div className="grid md:grid-cols-3 gap-6">
           <StatBox
-            number={stats ? Math.floor(stats.total_libraries / 1000) : "310"}
-            unit="k"
+            number={isLoading ? "..." : String(connectedFormatted.value)}
+            unit={connectedFormatted.unit}
             description="libraries connected"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
             link="#status"
@@ -93,8 +207,8 @@ export default function Home() {
           />
 
           <StatBox
-            number="90"
-            unit="k"
+            number={isLoading ? "..." : String(dslFormatted.value)}
+            unit={dslFormatted.unit}
             description="libraries use DSL"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
             link="#connection"
@@ -103,7 +217,7 @@ export default function Home() {
           />
 
           <StatBox
-            number="55"
+            number={isLoading ? "..." : String(stats?.happyPercentage || 0)}
             unit="%"
             description="of libraries are happy with their connection"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
