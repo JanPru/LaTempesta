@@ -1,0 +1,462 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+
+% Define colors
+\definecolor{headerblue}{RGB}{46,116,181}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{red-bucket}{RGB}{248,32,85}
+\definecolor{orange-bucket}{RGB}{253,185,0}
+\definecolor{green-bucket}{RGB}{62,216,150}
+\definecolor{cyan-bucket}{RGB}{32,187,206}
+\definecolor{pink-bucket}{RGB}{255,42,174}
+\definecolor{dsl-orange}{RGB}{255,138,0}
+\definecolor{satellite-green}{RGB}{92,255,122}
+\definecolor{cable-yellow}{RGB}{213,230,0}
+\definecolor{mobile-blue}{RGB}{30,91,255}
+\definecolor{other-purple}{RGB}{122,31,255}
+\definecolor{unknown-cyan}{RGB}{39,199,216}
+\definecolor{poor-orange}{RGB}{255,122,0}
+\definecolor{fair-yellow}{RGB}{255,212,0}
+\definecolor{good-green}{RGB}{139,224,78}
+\definecolor{excellent-green}{RGB}{46,173,39}
+\definecolor{infra-blue}{RGB}{54,166,216}
+\definecolor{cost-orange}{RGB}{255,108,0}
+\definecolor{electrical-green}{RGB}{14,173,39}
+\definecolor{literacy-olive}{RGB}{179,190,57}
+\definecolor{policy-purple}{RGB}{158,101,172}
+\definecolor{multi-pink}{RGB}{216,58,143}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{codebg},
+    frame=single,
+    framesep=5pt,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=2,
+    showstringspaces=false
+}
+
+% Title formatting
+\titleformat{\section}{\Large\bfseries\color{headerblue}}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{headerblue}}{\thesubsection}{1em}{}
+
+\title{\textbf{CSV Data Adaptation to Web Application}\\[0.5em]\large Libraries Boosting Connectivity}
+\author{Technical Documentation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+This document explains how data from the CSV file is loaded, transformed, and used in the Libraries Boosting Connectivity web application.
+
+\section{CSV File Location}
+
+The CSV file must be located at:
+\begin{lstlisting}
+frontend/public/arxiu_sortida.csv
+\end{lstlisting}
+
+\section{CSV Columns and Their Usage}
+
+\subsection{Essential Columns (Required)}
+
+\begin{longtable}{|p{5cm}|p{2cm}|p{7cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\endhead
+\texttt{lat} & Number & Latitude coordinate for map marker \\
+\hline
+\texttt{lon} & Number & Longitude coordinate for map marker \\
+\hline
+\texttt{Country} & Text & Library country (for filtering and statistics) \\
+\hline
+\texttt{Library Name} & Text & Name of the library \\
+\hline
+\end{longtable}
+
+\subsection{Library Type Columns}
+
+\begin{longtable}{|p{7cm}|p{7cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{Select the library type} & Library type (Public, Academic, etc.) \\
+\hline
+\texttt{Other (specify):Select the library type} & Custom text if type is "Other" \\
+\hline
+\end{longtable}
+
+\subsection{Connectivity Columns}
+
+\begin{longtable}{|p{5.5cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Expected Values}} & \textcolor{white}{\textbf{Usage}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Expected Values}} & \textcolor{white}{\textbf{Usage}} \\
+\hline
+\endhead
+\texttt{Does the library currently have Internet access?} & "Yes", "No", or empty & \textbf{Main filter}: Connected vs Not Connected \\
+\hline
+\texttt{What type of internet connection does your library have?} & Text (Fiber, DSL, Satellite, Cable, Mobile, etc.) & Connection type chart \\
+\hline
+\texttt{What is the average Internet/download speed available at the library?} & Text (see speed buckets table) & Speed halo color \\
+\hline
+\texttt{How would you rate the current state of digital infrastructure and devices in your library?} & Number 0-100 & Perceived quality chart \\
+\hline
+\texttt{How stable is the Internet connection?} & Text & Displayed in library details \\
+\hline
+\texttt{Is there a separate network access for users and library staff?} & "Yes", "No" & Displayed in details (type\_connect mode) \\
+\hline
+\end{longtable}
+
+\subsection{Reasons for No Connection Columns}
+
+These columns are used when the library does NOT have internet. If they have any value (except empty, "na", "n/a", "none", "0", "false", "no"), they are counted:
+
+\begin{longtable}{|p{11cm}|p{3cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} & \textcolor{white}{\textbf{Bucket}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} & \textcolor{white}{\textbf{Bucket}} \\
+\hline
+\endhead
+\texttt{Infrastructure limitations:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & \texttt{infrastructure} \\
+\hline
+\texttt{High cost:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & \texttt{high\_cost} \\
+\hline
+\texttt{Electrical supply issues:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & \texttt{electrical} \\
+\hline
+\texttt{Digital literacy gaps (library staff lacks basic digital skills so there would be underutilization of connectivity resources):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & \texttt{digital\_literacy} \\
+\hline
+\texttt{Policy/Regulatory barriers (national regulations limit Internet access):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & \texttt{policy} \\
+\hline
+\texttt{All of the above:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)} & Adds to all categories \\
+\hline
+\end{longtable}
+
+\subsection{Services Most Affected Columns}
+
+These columns indicate which library services have been most affected by the lack of Internet connectivity. Each column represents a different service category. If they have any value (except empty, "na", "n/a", "none", "0", "false", "no"), they are counted as affected:
+
+\begin{longtable}{|p{12cm}|p{2cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} & \textcolor{white}{\textbf{Short Label}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} & \textcolor{white}{\textbf{Short Label}} \\
+\hline
+\endhead
+\texttt{Access to online databases and research resources (e.g. academic journals, e-books, online educational materials):Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Online databases \\
+\hline
+\texttt{Digital literacy programs (impossible to implement due to lack of connectivity):Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Digital literacy \\
+\hline
+\texttt{Job search and employment services:Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Job search \\
+\hline
+\texttt{Virtual learning and education:Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Virtual learning \\
+\hline
+\texttt{Communication services (e.g. email, social media, video conferencing platforms):Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Communication \\
+\hline
+\texttt{Digital archives and local history access:Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Digital archives \\
+\hline
+\texttt{Other:Which of the following library services has been mostly affected by the lack of Internet connectivity?} & Other \\
+\hline
+\end{longtable}
+
+\subsection{Basic Information Columns}
+
+\begin{longtable}{|p{9cm}|p{5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{How many staff members work at your library (full-time equivalent)?} & Staff count \\
+\hline
+\texttt{Date Submitted} & Submission date (year extracted for "Data source") \\
+\hline
+\end{longtable}
+
+\subsection{Target Audience Columns}
+
+\begin{longtable}{|p{14cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} \\
+\hline
+\endhead
+\texttt{Children (0-12 years):Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Teenagers (13-17 years):Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Adults (18-60 years):Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Seniors (65+ years):Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Students:Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Entrepreneurs:Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Educators / Teachers:Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\texttt{Researchers / Academics:Select multiple options to specify the approximate target audience of your library} \\
+\hline
+\end{longtable}
+
+\subsection{Internet Access Columns}
+
+\begin{longtable}{|p{9cm}|p{5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{How many hours per day is the Internet available to users?} & Availability hours \\
+\hline
+\texttt{How many computers or devices with Internet access are available for users in your library?} & Available devices \\
+\hline
+\texttt{More than 20 (specify):How many computers or devices with Internet access are available for users in your library?} & Specification if >20 \\
+\hline
+\texttt{Please provide an approximate number for the amount of users that access the library Internet on a daily basis.} & Daily users \\
+\hline
+\end{longtable}
+
+\subsection{Devices Used Columns}
+
+\begin{longtable}{|p{14cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Full Column Name}} \\
+\hline
+\texttt{Desktop computers:What devices are primarily used to access the Internet?} \\
+\hline
+\texttt{Laptops:What devices are primarily used to access the Internet?} \\
+\hline
+\texttt{Smartphones:What devices are primarily used to access the Internet?} \\
+\hline
+\texttt{Tablets:What devices are primarily used to access the Internet?} \\
+\hline
+\texttt{Other:What devices are primarily used to access the Internet?} \\
+\hline
+\end{longtable}
+
+\subsection{Digital Resources Columns}
+
+\begin{longtable}{|p{9cm}|p{5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{Educational websites:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Online journals:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Online courses:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{E-books:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Educational videos:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Interactive software:What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Other (specify):What types of digital resources are used at the library?} & Resource type \\
+\hline
+\texttt{Provide an approximate estimate of the number digital resources that are available in your collection} & Resource quantity \\
+\hline
+\texttt{Are your digital resources accessible remotely? (outside of library premises)} & Remote access \\
+\hline
+\end{longtable}
+
+\subsection{Impact Column}
+
+\begin{longtable}{|p{9cm}|p{5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Column}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{How has the unavailability of Internet connectivity affected your library's ability to provide services to users?} & Impact of lack of connection \\
+\hline
+\end{longtable}
+
+\section{Data Transformation}
+
+\subsection{Download Speed Buckets (\_\_dlBucket)}
+
+Speed is calculated from the column:\\
+\texttt{What is the average Internet/download speed available at the library?}
+
+\begin{longtable}{|p{6cm}|p{3cm}|p{3cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{CSV Value (contains...)}} & \textcolor{white}{\textbf{Bucket}} & \textcolor{white}{\textbf{Color}} \\
+\hline
+"less than 1", "between 1-5", "1-5", "less than 5" & \texttt{red} & \cellcolor{red-bucket}\textcolor{white}{\#F82055} \\
+\hline
+"between 5-20", "5-20", "between 20-40", "20-40" & \texttt{orange} & \cellcolor{orange-bucket}\#FDB900 \\
+\hline
+"between 40-100", "40-100", "more than 100", ">100" & \texttt{green} & \cellcolor{green-bucket}\#3ED896 \\
+\hline
+Empty or other & \texttt{unknown} & \cellcolor{cyan-bucket}\#20BBCE \\
+\hline
+\end{longtable}
+
+\subsection{Connection Type Buckets (\_\_connBucket)}
+
+Connection is calculated from the column:\\
+\texttt{What type of internet connection does your library have?}
+
+\begin{longtable}{|p{6cm}|p{3cm}|p{3cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{CSV Value (contains...)}} & \textcolor{white}{\textbf{Bucket}} & \textcolor{white}{\textbf{Color}} \\
+\hline
+"optic", "fiber", "fibre" & \texttt{optic\_fiber} & \cellcolor{pink-bucket}\textcolor{white}{\#FF2AAE} \\
+\hline
+"dsl", "adsl", "vdsl" & \texttt{dsl} & \cellcolor{dsl-orange}\#FF8A00 \\
+\hline
+"satellite", "sat" & \texttt{satellite} & \cellcolor{satellite-green}\#5CFF7A \\
+\hline
+"cable", "coax" & \texttt{cable} & \cellcolor{cable-yellow}\#D5E600 \\
+\hline
+"mobile", "cell", "3g", "4g", "5g", "lte" & \texttt{mobile\_data} & \cellcolor{mobile-blue}\textcolor{white}{\#1E5BFF} \\
+\hline
+"other" & \texttt{other} & \cellcolor{other-purple}\textcolor{white}{\#7A1FFF} \\
+\hline
+"unknown", "n/a", "na", "none", or empty & \texttt{unknown} & \cellcolor{unknown-cyan}\#27C7D8 \\
+\hline
+\end{longtable}
+
+\subsection{Perceived Quality Buckets (\_\_pqBucket)}
+
+Quality is calculated from the column:\\
+\texttt{How would you rate the current state of digital infrastructure and devices in your library?}
+
+\begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{CSV Value (0-100)}} & \textcolor{white}{\textbf{Bucket}} & \textcolor{white}{\textbf{Color}} \\
+\hline
+0-19 & \texttt{very\_poor} & \cellcolor{red-bucket}\textcolor{white}{\#F82055} \\
+\hline
+20-49 & \texttt{poor} & \cellcolor{poor-orange}\#FF7A00 \\
+\hline
+50-59 & \texttt{fair} & \cellcolor{fair-yellow}\#FFD400 \\
+\hline
+60-79 & \texttt{good} & \cellcolor{good-green}\#8BE04E \\
+\hline
+80-100 & \texttt{excellent} & \cellcolor{excellent-green}\textcolor{white}{\#2EAD27} \\
+\hline
+Empty or invalid & \texttt{unknown} & \cellcolor{cyan-bucket}\#20BBCE \\
+\hline
+\end{longtable}
+
+\subsection{Not Connected Reason Buckets (\_\_reasonBucket)}
+
+\begin{longtable}{|p{6cm}|p{3cm}|p{3cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Situation}} & \textcolor{white}{\textbf{Bucket}} & \textcolor{white}{\textbf{Color}} \\
+\hline
+Only "Infrastructure limitations" selected & \texttt{infrastructure} & \cellcolor{infra-blue}\textcolor{white}{\#36A6D8} \\
+\hline
+Only "High cost" selected & \texttt{high\_cost} & \cellcolor{cost-orange}\#FF6C00 \\
+\hline
+Only "Electrical supply issues" selected & \texttt{electrical} & \cellcolor{electrical-green}\textcolor{white}{\#0EAD27} \\
+\hline
+Only "Digital literacy gaps" selected & \texttt{digital\_literacy} & \cellcolor{literacy-olive}\#B3BE39 \\
+\hline
+Only "Policy/Regulatory barriers" selected & \texttt{policy} & \cellcolor{policy-purple}\textcolor{white}{\#9E65AC} \\
+\hline
+2+ reasons or "All of the above" & \texttt{multi} & \cellcolor{multi-pink}\textcolor{white}{\#D83A8F} \\
+\hline
+No reason or library is connected & \texttt{unknown} & \cellcolor{cyan-bucket}\#20BBCE \\
+\hline
+\end{longtable}
+
+\section{Calculated Statistics}
+
+The application automatically calculates:
+
+\begin{longtable}{|p{5cm}|p{9cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Statistic}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\texttt{totalPoints} & Total number of libraries \\
+\hline
+\texttt{connectivityMapped} & Libraries with connectivity info \\
+\hline
+\texttt{downloadMeasured} & Libraries with speed measurements \\
+\hline
+\texttt{dlRed}, \texttt{dlOrange}, \texttt{dlGreen} & Distribution by speed \\
+\hline
+\texttt{internetYes}, \texttt{internetNo} & Connected vs not connected \\
+\hline
+\texttt{connectionTypeCounts} & Count by connection type \\
+\hline
+\texttt{perceivedQualityCounts} & Count by quality level \\
+\hline
+\texttt{notConnectReasonsCounts} & Count by reason for no connection \\
+\hline
+\end{longtable}
+
+\section{Map Visualization Modes}
+
+\begin{longtable}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Mode}} & \textcolor{white}{\textbf{Active Filter}} & \textcolor{white}{\textbf{What It Shows}} \\
+\hline
+\texttt{library\_status} & Default & Green=Connected, Red=No, Cyan=Unknown \\
+\hline
+\texttt{type\_connect} & Connection type & Colors by type (fiber, DSL, etc.) \\
+\hline
+\texttt{not\_connect} & Not connected & Only libraries without internet, by reason \\
+\hline
+\texttt{perceived\_quality} & Quality & Colors by quality level \\
+\hline
+\end{longtable}
+
+\section{How to Add Multiple CSV Files}
+
+To use multiple CSV files, modify \texttt{MapPage.jsx} to iterate through an array of CSV file paths, loading and parsing each one. Combine all the resulting features into a single GeoJSON FeatureCollection before setting the state. Each new CSV file must be placed in \texttt{frontend/public/} and must have the same column structure (or at least the required columns: \texttt{lat}, \texttt{lon}, \texttt{Country}, \texttt{Library Name}).
+
+\section{Related Files}
+
+\begin{longtable}{|p{7.5cm}|p{6.5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{File}} & \textcolor{white}{\textbf{Function}} \\
+\hline
+\texttt{src/pages/MapPage.jsx} & Data loading and processing \\
+\hline
+\texttt{src/components/MenuLateral.jsx} & Displays statistics and charts \\
+\hline
+\texttt{src/components/LibraryDetailsPanel.jsx} & Library details \\
+\hline
+\texttt{src/components/BottomFilters.jsx} & Visualization mode selector \\
+\hline
+\texttt{src/components/MapLegend.jsx} & Map legend \\
+\hline
+\end{longtable}
+
+\end{document}

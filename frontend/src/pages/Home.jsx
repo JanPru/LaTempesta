@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import StatBox from "../components/StatBox";
 import AnimatedNetwork from "../components/AnimatedNetwork";
+import Footer from "../components/Footer";
 import Papa from "papaparse";
 
 /* ---------- Hook media query ---------- */
@@ -159,20 +160,25 @@ export default function Home() {
           <div className="order-1" style={{ marginTop: "-40px" }}>
             <h1 style={styles.heroTitle}>Libraries Boosting Connectivity</h1>
             <p style={styles.heroText}>
-              Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
-              nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam
-              erat, sed diam voluptua. At vero eos et accusam et justo duo dolores
-              et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est
+              The 'Libraries Boosting Connectivity' project is an initiative looking to expand digital
+              opportunities for and through libraries, aiming to obtain a more comprehensive picture of
+              the global state of connectivity in libraries. The initiative gathers crucial library data on
+              connectivity and the broader factors that shape digital access.
             </p>
 
-            <a href="/map" style={styles.exploreButton}>
-              <span style={styles.exploreButtonText}>Explore LBC Map</span>
-              <img
-                src="/img/Icon core-arrow-circle-right.png"
-                alt="Arrow"
-                style={styles.exploreButtonIcon}
-              />
-            </a>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <a href="/map" style={styles.exploreButton}>
+                <span style={styles.exploreButtonText}>Explore LBC Map</span>
+                <img
+                  src="/img/Icon core-arrow-circle-right.png"
+                  alt="Arrow"
+                  style={styles.exploreButtonIcon}
+                />
+              </a>
+              <a href="/about" style={styles.aboutButton}>
+                <span style={styles.aboutButtonText}>About</span>
+              </a>
+            </div>
           </div>
 
           {/* MAPA */}
@@ -227,6 +233,9 @@ export default function Home() {
           />
         </div>
       </section>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
@@ -249,7 +258,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     padding: "8px 14px",
-    borderRadius: "4px",
+    borderRadius: "0",
     textDecoration: "none",
   },
   exploreButtonText: {
@@ -261,5 +270,20 @@ const styles = {
     width: "16px",
     height: "16px",
     filter: "brightness(0) invert(1)",
+  },
+  aboutButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "83px",
+    height: "38px",
+    border: "1px solid #C90030",
+    borderRadius: "0",
+    textDecoration: "none",
+    background: "transparent",
+  },
+  aboutButtonText: {
+    font: "normal normal medium 16px/16px Noto Sans",
+    color: "#C90030",
   },
 };

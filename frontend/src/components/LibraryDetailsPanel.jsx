@@ -66,6 +66,345 @@ function InfoIconWithTooltip({ text }) {
   );
 }
 
+/* =====================
+ * NOT CONNECT MODE Component
+ * ===================== */
+const NOT_CONNECT_REASON_COLS = [
+  {
+    key: "infrastructure",
+    label: "Infrastructure limitations",
+    col: "Infrastructure limitations:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+  },
+  {
+    key: "high_cost",
+    label: "High cost",
+    col: "High cost:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+  },
+  {
+    key: "electrical",
+    label: "Electrical supply issues",
+    col: "Electrical supply issues:Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+  },
+  {
+    key: "digital_literacy",
+    label: "Digital literacy gaps",
+    col: "Digital literacy gaps (library staff lacks basic digital skills so there would be underutilization of connectivity resources):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+  },
+  {
+    key: "policy",
+    label: "Policy/Regulatory barriers",
+    col: "Policy/Regulatory barriers (national regulations limit Internet access):Kindly provide a brief explanation for your previous answer below (multiple answers are possible)",
+  },
+];
+
+const SERVICES_AFFECTED_COLS = [
+  {
+    key: "online_databases",
+    label: "Access to online databases and research resources",
+    col: "Access to online databases and research resources (e.g. academic journals, e-books, online educational materials):Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "digital_literacy",
+    label: "Digital literacy programs",
+    col: "Digital literacy programs (impossible to implement due to lack of connectivity):Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "job_search",
+    label: "Job search and employment services",
+    col: "Job search and employment services:Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "virtual_learning",
+    label: "Virtual learning and education",
+    col: "Virtual learning and education:Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "communication",
+    label: "Communication services",
+    col: "Communication services (e.g. email, social media, video conferencing platforms):Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "digital_archives",
+    label: "Digital archives and local history access",
+    col: "Digital archives and local history access:Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+  {
+    key: "other",
+    label: "Other",
+    col: "Other:Which of the following library services has been mostly affected by the lack of Internet connectivity?",
+  },
+];
+
+function NotConnectModeContent({ name, type, DataSourceRow, p }) {
+  const [reasonsExpanded, setReasonsExpanded] = useState(false);
+
+  // Obtenir raons de no-connexió
+  const nonConnectionReasons = NOT_CONNECT_REASON_COLS.filter(({ col }) => {
+    const val = String(p?.[col] ?? "").trim().toLowerCase();
+    return val && val !== "" && val !== "0" && val !== "false" && val !== "no" && val !== "n/a";
+  }).map(({ label }) => label);
+
+  // Obtenir serveis afectats
+  const servicesAffected = SERVICES_AFFECTED_COLS.filter(({ col }) => {
+    const val = String(p?.[col] ?? "").trim().toLowerCase();
+    return val && val !== "" && val !== "0" && val !== "false" && val !== "no" && val !== "n/a";
+  }).map(({ label }) => label);
+
+  const Dot = ({ color }) => (
+    <span
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: color,
+        display: "inline-block",
+        flexShrink: 0,
+        marginRight: 8,
+      }}
+    />
+  );
+
+  // Row per Non-connection reason amb desplegable
+  const ExpandableReasonRow = ({ label, items, expanded, onToggle, infoText }) => {
+    const hasMultiple = items.length > 1;
+    // Color #D83A8F per "more than one reason" (mateix que al mapa)
+    const dotColor = hasMultiple ? "#D83A8F" : "#C90030";
+    const displayValue = hasMultiple ? "More than one reason" : (items[0] || "Unknown");
+
+    return (
+      <div style={{ padding: "0.7rem 0" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+          }}
+        >
+          {/* Label */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              maxWidth: "7rem",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                font: "normal normal 700 14px/16px Noto Sans",
+                color: "#4B4B4B",
+                lineHeight: "16px",
+                whiteSpace: "pre-line",
+              }}
+            >
+              {label}
+            </div>
+            {infoText ? <InfoIconWithTooltip text={infoText} /> : null}
+          </div>
+
+          {/* Value + toggle - fixe, no canvia */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 0,
+              cursor: hasMultiple ? "pointer" : "default",
+            }}
+            onClick={hasMultiple ? onToggle : undefined}
+          >
+            <Dot color={dotColor} />
+            <div
+              style={{
+                font: "normal normal normal 14px/16px Noto Sans",
+                color: "#4B4B4B",
+                textAlign: "right",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {displayValue}
+            </div>
+            {hasMultiple && (
+              <span
+                style={{
+                  marginLeft: "6px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  transition: "transform 0.2s",
+                  transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                  color: "#0F6641",
+                  fontSize: "10px",
+                  width: "12px",
+                  justifyContent: "center",
+                }}
+              >
+                ▼
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Expanded list - línia contínua a la dreta sota la fletxa */}
+        {hasMultiple && expanded && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "0.25rem",
+              paddingRight: "5px",
+            }}
+          >
+            <div
+              style={{
+                borderRight: "2px solid #0F6641",
+                paddingRight: "0.5rem",
+              }}
+            >
+              {items.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    font: "normal normal normal 13px/18px Noto Sans",
+                    color: "#4B4B4B",
+                    textAlign: "right",
+                    padding: "0.2rem 0",
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Row simple per Services most affected (mostra tots directament)
+  const ServicesRow = ({ label, items, infoText }) => {
+    if (!items.length) return null;
+    
+    return (
+      <div style={{ padding: "0.7rem 0" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+          }}
+        >
+          {/* Label */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              maxWidth: "7rem",
+            }}
+          >
+            <div
+              style={{
+                font: "normal normal 700 14px/16px Noto Sans",
+                color: "#4B4B4B",
+                lineHeight: "16px",
+                whiteSpace: "pre-line",
+              }}
+            >
+              {label}
+            </div>
+            {infoText ? <InfoIconWithTooltip text={infoText} /> : null}
+          </div>
+
+          {/* Values - tots directament */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: "0.25rem",
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  font: "normal normal normal 14px/18px Noto Sans",
+                  color: "#4B4B4B",
+                  textAlign: "right",
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ width: "100%" }}>
+      {/* NAME */}
+      <div
+        style={{
+          font: "normal normal bold 20px/24px Noto Sans",
+          color: "#000000",
+          whiteSpace: "pre-line",
+        }}
+      >
+        {name}
+      </div>
+
+      {/* TYPE */}
+      <div
+        style={{
+          marginTop: "0.4rem",
+          font: "normal normal 600 12px/16px Noto Sans",
+          color: "#0F6641",
+          letterSpacing: "0.5px",
+          textTransform: "uppercase",
+        }}
+      >
+        {type}
+      </div>
+
+      {/* DATA SOURCE */}
+      <DataSourceRow />
+
+      {/* DIVIDER */}
+      <div style={{ borderTop: "1px solid #DBDBDB", marginTop: "0.9rem" }} />
+
+      {/* NON-CONNECTION REASONS */}
+      {nonConnectionReasons.length > 0 && (
+        <ExpandableReasonRow
+          label={"Non-\nconnection\nreason"}
+          items={nonConnectionReasons}
+          expanded={reasonsExpanded}
+          onToggle={() => setReasonsExpanded(!reasonsExpanded)}
+          infoText="Reasons why the library is not connected to the Internet."
+        />
+      )}
+
+      {/* SERVICES MOST AFFECTED */}
+      {servicesAffected.length > 0 && (
+        <ServicesRow
+          label={"Services most\naffected"}
+          items={servicesAffected}
+          infoText="Library services that have been mostly affected by the lack of Internet connectivity."
+        />
+      )}
+    </div>
+  );
+}
+
 export default function LibraryDetailsPanel({ library, mode = "library_status" }) {
   const p = library?.properties || {};
 
@@ -187,35 +526,16 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   );
 
   /* =========================================================
-   * ✅ NOT CONNECT MODE: només nom + tipus i ja està
+   * ✅ NOT CONNECT MODE: nom + tipus + reasons + services affected
    * ========================================================= */
   if (mode === "not_connect") {
     return (
-      <div style={{ width: "100%" }}>
-        {/* NAME */}
-        <div
-          style={{
-            font: "normal normal bold 20px/24px Noto Sans",
-            color: "#000000",
-            whiteSpace: "pre-line",
-          }}
-        >
-          {name}
-        </div>
-
-        {/* TYPE */}
-        <div
-          style={{
-            marginTop: "0.4rem",
-            font: "normal normal 600 12px/16px Noto Sans",
-            color: "#0F6641",
-            letterSpacing: "0.5px",
-            textTransform: "uppercase",
-          }}
-        >
-          {type}
-        </div>
-      </div>
+      <NotConnectModeContent
+        name={name}
+        type={type}
+        DataSourceRow={DataSourceRow}
+        p={p}
+      />
     );
   }
 

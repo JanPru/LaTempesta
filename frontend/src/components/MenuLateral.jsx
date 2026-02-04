@@ -467,6 +467,32 @@ export default function MenuLateral({
   const [isMobile, setIsMobile] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Libraries Boosting Connectivity',
+      text: 'An open & live global map of libraries and their connectivity',
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          alert('Link copied to clipboard!');
+        } catch {
+          console.error('Failed to share or copy link');
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -613,6 +639,7 @@ export default function MenuLateral({
             <img
               src="/img/menuLateral/Share.png"
               alt="Share"
+              onClick={handleShare}
               style={{
                 width: "0.875rem",
                 height: "0.94rem",
@@ -921,6 +948,7 @@ export default function MenuLateral({
           <img
             src="/img/menuLateral/Share.png"
             alt="Share"
+            onClick={handleShare}
             style={{
               width: "0.875rem",
               height: "0.94rem",

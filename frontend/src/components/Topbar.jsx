@@ -67,32 +67,18 @@ export default function Topbar() {
   const NavLinks = ({ mobile = false }) => (
     <>
       <a
-        href="#about"
+        href="/about"
         style={mobile ? styles.mobileNavLink : styles.navLink}
         onClick={mobile ? toggleMenu : undefined}
       >
         About
       </a>
       <a
-        href="#impact"
+        href="/country-profiles"
         style={mobile ? styles.mobileNavLink : styles.navLink}
         onClick={mobile ? toggleMenu : undefined}
       >
-        Impact
-      </a>
-      <a
-        href="#resources"
-        style={mobile ? styles.mobileNavLink : styles.navLink}
-        onClick={mobile ? toggleMenu : undefined}
-      >
-        Resources
-      </a>
-      <a
-        href="#faqs"
-        style={mobile ? styles.mobileNavLink : styles.navLink}
-        onClick={mobile ? toggleMenu : undefined}
-      >
-        FAQs
+        Country Profiles
       </a>
 
       {/* The map link is styled separately to keep the brand colour. */}
