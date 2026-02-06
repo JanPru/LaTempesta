@@ -462,6 +462,8 @@ export default function MenuLateral({
 
   activeBottomFilter = "library_status",
   onChangeBottomFilter,
+  
+  onMobileExpandedChange,
 }) {
   const [filters] = useState({
     country: "Country",
@@ -470,6 +472,12 @@ export default function MenuLateral({
 
   const [isMobile, setIsMobile] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  // Notify parent when mobile expanded state changes
+  const handleMobileExpand = (expanded) => {
+    setMobileExpanded(expanded);
+    if (onMobileExpandedChange) onMobileExpandedChange(expanded);
+  };
 
   const handleShare = async () => {
     const shareData = {
@@ -555,7 +563,7 @@ export default function MenuLateral({
           height: mobileExpanded ? "70vh" : "35vh",
           maxHeight: mobileExpanded ? "70vh" : "35vh",
           background: "#FFFFFF",
-          opacity: 0.95,
+          opacity: 1,
           transition: "all 0.3s ease",
           zIndex: 1000,
           display: "flex",
@@ -565,7 +573,7 @@ export default function MenuLateral({
       >
         {/* Arrow toggle at the top - stays fixed */}
         <div
-          onClick={() => setMobileExpanded(!mobileExpanded)}
+          onClick={() => handleMobileExpand(!mobileExpanded)}
           style={{
             display: "flex",
             justifyContent: "center",

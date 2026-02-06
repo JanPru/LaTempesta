@@ -1,11 +1,12 @@
 import React from "react";
 
 const LEGEND_WIDTH = 380; // ✅ unificat (mateix “tamany base” que library status)
-const BOX_STYLE = {
-  position: "absolute",
-  right: "18px",
-  bottom: "18px",
-  zIndex: 20,
+
+const getBoxStyle = (embedded = false) => ({
+  position: embedded ? "relative" : "absolute",
+  right: embedded ? "auto" : "18px",
+  bottom: embedded ? "auto" : "18px",
+  zIndex: embedded ? "auto" : 20,
   background: "#FFFFFF",
   borderRadius: 0,
   boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
@@ -13,8 +14,9 @@ const BOX_STYLE = {
   fontFamily: "Noto Sans, sans-serif",
   userSelect: "none",
   width: `${LEGEND_WIDTH}px`,
+  maxWidth: embedded ? "100%" : `${LEGEND_WIDTH}px`,
   boxSizing: "border-box",
-};
+});
 
 const TITLE_STYLE = {
   textAlign: "left",
@@ -158,7 +160,7 @@ function TwoColGrid({ children, columnGap = 16, rowGap = 8 }) {
   );
 }
 
-export default function MapLegend({ mode = "library_status" }) {
+export default function MapLegend({ mode = "library_status", embedded = false }) {
   const isTypeConnection = mode === "type_connect";
 
   const isNotConnect =
@@ -167,10 +169,12 @@ export default function MapLegend({ mode = "library_status" }) {
   const isPerceivedQuality =
     mode === "perceived_quality" || mode === "perceived" || mode === "pq";
 
+  const boxStyle = getBoxStyle(embedded);
+
   // ✅ NOT CONNECT legend
   if (isNotConnect) {
     return (
-      <div style={BOX_STYLE}>
+      <div style={boxStyle}>
         <div style={TITLE_STYLE}>Not-connection reason</div>
 
         <TwoColGrid columnGap={16} rowGap={10}>
@@ -205,7 +209,7 @@ export default function MapLegend({ mode = "library_status" }) {
   // ✅ TYPE OF CONNECTION legend
   if (isTypeConnection) {
     return (
-      <div style={BOX_STYLE}>
+      <div style={boxStyle}>
         <div style={TITLE_STYLE}>Type of internet connection</div>
 
         <TwoColGrid columnGap={14} rowGap={8}>
@@ -232,7 +236,7 @@ export default function MapLegend({ mode = "library_status" }) {
   // ✅ PERCEIVED QUALITY legend (NOU)
   if (isPerceivedQuality) {
     return (
-      <div style={BOX_STYLE}>
+      <div style={boxStyle}>
         <div style={TITLE_STYLE}>Perceived quality of internet access</div>
 
         <TwoColGrid columnGap={16} rowGap={10}>
@@ -251,7 +255,7 @@ export default function MapLegend({ mode = "library_status" }) {
 
   // ✅ DEFAULT legend (status + download) — base reference size
   return (
-    <div style={BOX_STYLE}>
+    <div style={boxStyle}>
       <div
         style={{
           display: "grid",

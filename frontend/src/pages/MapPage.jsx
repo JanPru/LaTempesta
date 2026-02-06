@@ -26,6 +26,18 @@ export default function MapPage() {
 
   const [menuOpen, setMenuOpen] = useState(true);
 
+  // Mobile detection for proper zoom padding
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileLegend, setShowMobileLegend] = useState(false);
+  const [mobileMenuExpanded, setMobileMenuExpanded] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
 
@@ -709,8 +721,13 @@ export default function MapPage() {
           const n = normalizeCountry(country);
           const bbox = countryBBoxes[n];
           if (bbox) {
+            // Different padding for mobile (menu at bottom) vs desktop (menu at left)
+            const padding = isMobile
+              ? { top: 60, bottom: window.innerHeight * 0.4, left: 40, right: 40 }
+              : { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 };
+            
             mapRef.current.getMap().fitBounds(bbox, {
-              padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
+              padding,
               duration: 800,
               maxZoom: 5.0,
             });
@@ -730,14 +747,19 @@ export default function MapPage() {
           [[Infinity, Infinity], [-Infinity, -Infinity]]
         );
 
+        // Different padding for mobile vs desktop
+        const padding = isMobile
+          ? { top: 60, bottom: window.innerHeight * 0.4, left: 40, right: 40 }
+          : { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 };
+
         mapRef.current.getMap().fitBounds(bounds, {
-          padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+          padding,
           duration: 800,
           maxZoom: 3.5,
         });
       }
     },
-    [fullGeojson, countryBBoxes, menuOpen]
+    [fullGeojson, countryBBoxes, menuOpen, isMobile]
   );
 
   const handleSelectCountry = useCallback(
@@ -765,7 +787,18 @@ export default function MapPage() {
     (e) => {
       if (!e.features || e.features.length === 0) {
         setSelectedFeature(null);
-        handleSelectCountry("Worldwide");
+        // In mobile, do a gentler zoom out instead of fitting all bounds
+        if (isMobile && mapRef.current) {
+          mapRef.current.getMap().flyTo({
+            zoom: Math.max(mapRef.current.getMap().getZoom() - 2, 2),
+            duration: 800,
+          });
+          // Update country to Worldwide and apply filters (without zoom since we did manual zoom)
+          setSelectedCountry("Worldwide");
+          applyFilters("Worldwide", selectedLibraryType, false);
+        } else {
+          handleSelectCountry("Worldwide");
+        }
         return;
       }
 
@@ -785,7 +818,7 @@ export default function MapPage() {
         if (countryName) handleSelectCountry(countryName);
       }
     },
-    [handleSelectCountry]
+    [handleSelectCountry, isMobile, applyFilters, selectedLibraryType]
   );
 
   // =========================================================
@@ -893,8 +926,14 @@ export default function MapPage() {
             [[Infinity, Infinity], [-Infinity, -Infinity]]
           );
 
+          // Check if mobile at the moment of execution
+          const isMobileNow = window.innerWidth <= 768;
+          const padding = isMobileNow
+            ? { top: 60, bottom: window.innerHeight * 0.4, left: 40, right: 40 }
+            : { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 };
+
           mapRef.current.getMap().fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+            padding,
             duration: 800,
             maxZoom: 3.5,
           });
@@ -1120,6 +1159,7 @@ export default function MapPage() {
         selectedLibrary={selectedLibrary}
         activeBottomFilter={activeBottomFilter}
         onChangeBottomFilter={setActiveBottomFilter}
+        onMobileExpandedChange={setMobileMenuExpanded}
       />
 
       <TopBrand />
@@ -1199,7 +1239,77 @@ export default function MapPage() {
         )}
       </Map>
 
-      <MapLegend mode={activeBottomFilter} />
+      {/* Desktop legend - hidden on mobile */}
+      {!isMobile && <MapLegend mode={activeBottomFilter} />}
+
+      {/* Mobile legend info button */}
+      {isMobile && (
+        <>
+          {/* Info button floating above mobile menu */}
+          <button
+            onClick={() => setShowMobileLegend((v) => !v)}
+            style={{
+              position: "fixed",
+              bottom: mobileMenuExpanded ? "calc(70vh + 16px)" : "calc(35vh + 16px)",
+              right: 16,
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: "#0F6641",
+              border: "none",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 1001,
+              transition: "bottom 0.3s ease",
+            }}
+            aria-label="Show legend"
+          >
+            <span
+              style={{
+                color: "#FFFFFF",
+                font: "normal normal bold 20px/20px Noto Sans",
+              }}
+            >
+              i
+            </span>
+          </button>
+
+          {/* Mobile legend overlay */}
+          {showMobileLegend && (
+            <>
+              {/* Backdrop to close */}
+              <div
+                onClick={() => setShowMobileLegend(false)}
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "rgba(0,0,0,0.3)",
+                  zIndex: 1002,
+                }}
+              />
+              {/* Legend positioned in center */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 1003,
+                  maxWidth: "90vw",
+                }}
+              >
+                <MapLegend mode={activeBottomFilter} embedded />
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
