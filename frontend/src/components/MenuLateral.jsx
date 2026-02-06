@@ -451,6 +451,10 @@ export default function MenuLateral({
   selectedCountry = "Worldwide",
   onSelectCountry,
 
+  libraryTypes = [],
+  selectedLibraryType = "All",
+  onSelectLibraryType,
+
   countriesCount = 0,
   stats,
 
@@ -606,6 +610,9 @@ export default function MenuLateral({
             countries={countries}
             selectedCountry={selectedCountry}
             onSelectCountry={onSelectCountry}
+            libraryTypes={libraryTypes}
+            selectedLibraryType={selectedLibraryType}
+            onSelectLibraryType={onSelectLibraryType}
             mobile={true}
           />
 
@@ -869,6 +876,7 @@ export default function MenuLateral({
           alignItems: "center",
           justifyContent: "center",
           zIndex: 60,
+          transition: "left 0.3s ease",
         }}
       >
         <img
@@ -879,6 +887,7 @@ export default function MenuLateral({
             height: "0.875rem",
             filter: "invert(1)",
             transform: arrowRotate,
+            transition: "transform 0.3s ease",
             display: "block",
           }}
         />
@@ -905,6 +914,9 @@ export default function MenuLateral({
           countries={countries}
           selectedCountry={selectedCountry}
           onSelectCountry={onSelectCountry}
+          libraryTypes={libraryTypes}
+          selectedLibraryType={selectedLibraryType}
+          onSelectLibraryType={onSelectLibraryType}
         />
 
         {/* Separator line */}

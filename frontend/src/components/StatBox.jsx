@@ -1,4 +1,6 @@
 // StatBox.jsx
+import { Link } from "react-router-dom";
+
 export default function StatBox({
   number,
   unit,
@@ -22,9 +24,9 @@ export default function StatBox({
         </div>
         <div style={styles.description}>{description}</div>
         <p style={styles.text}>{text}</p>
-        <a href={link} style={styles.link}>
+        <Link to={link} style={styles.link}>
           {linkText}
-        </a>
+        </Link>
       </div>
     </div>
   );

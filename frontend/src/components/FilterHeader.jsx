@@ -1,26 +1,55 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 
 /*
  * FilterHeader - Resize Proof
  * - Dropdown simple per "Country" amb scroll
+ * - Dropdown simple per "Type of library" amb scroll
  * - Mostra tots els països disponibles (countries)
- * - Selecció: crida onSelectCountry(country)
+ * - Mostra tots els tipus de biblioteca disponibles (libraryTypes)
+ * - Selecció: crida onSelectCountry(country) / onSelectLibraryType(type)
  */
 export default function FilterHeader({
   selectedCountry = "Worldwide",
   countries = [],
   onSelectCountry,
+  libraryTypes = [],
+  selectedLibraryType = "All",
+  onSelectLibraryType,
   mobile = false,
 }) {
   const [openCountry, setOpenCountry] = useState(false);
+  const [openLibraryType, setOpenLibraryType] = useState(false);
+  
+  const containerRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpenCountry(false);
+        setOpenLibraryType(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const sortedCountries = useMemo(() => {
     const arr = (countries || []).filter(Boolean);
     return arr.sort((a, b) => a.localeCompare(b));
   }, [countries]);
 
+  const sortedLibraryTypes = useMemo(() => {
+    const arr = (libraryTypes || []).filter(Boolean);
+    return arr.sort((a, b) => a.localeCompare(b));
+  }, [libraryTypes]);
+
   return (
     <div
+      ref={containerRef}
       style={{
         position: mobile ? "relative" : "absolute",
         top: mobile ? "0" : "3%",
@@ -59,7 +88,10 @@ export default function FilterHeader({
         {/* Country (dropdown) */}
         <div style={{ position: "relative", marginLeft: "1rem" }}>
           <div
-            onClick={() => setOpenCountry((v) => !v)}
+            onClick={() => {
+              setOpenCountry((v) => !v);
+              setOpenLibraryType(false);
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -150,31 +182,102 @@ export default function FilterHeader({
           )}
         </div>
 
-        {/* Type of library (sense salt de línia) */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.31rem",
-            marginLeft: "0.625rem",
-            flexShrink: 0,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <span
+        {/* Type of library (dropdown) */}
+        <div style={{ position: "relative", marginLeft: "0.625rem" }}>
+          <div
+            onClick={() => {
+              setOpenLibraryType((v) => !v);
+              setOpenCountry(false);
+            }}
             style={{
-              font: "normal normal 600 1rem/1.56rem Noto Sans",
-              color: "#000000",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.31rem",
+              cursor: "pointer",
+              userSelect: "none",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
-            Type of library
-          </span>
+            <span
+              style={{
+                font: "normal normal 600 1rem/1.56rem Noto Sans",
+                color: "#000000",
+              }}
+            >
+              Type of library
+            </span>
 
-          <img
-            src="/img/menuLateral/arrowDropDown.png"
-            alt="Toggle library type filter"
-            style={{ width: "0.69rem", height: "0.69rem", marginTop: "0.125rem" }}
-          />
+            <img
+              src="/img/menuLateral/arrowDropDown.png"
+              alt="Open library type menu"
+              style={{
+                width: "0.69rem",
+                height: "0.69rem",
+                marginTop: "0.125rem",
+                transform: openLibraryType ? "rotate(-90deg)" : "rotate(0deg)",
+                transition: "transform 0.15s ease",
+              }}
+            />
+          </div>
+
+          {/* Dropdown */}
+          {openLibraryType && (
+            <div
+              style={{
+                position: "absolute",
+                top: "1.75rem",
+                right: "0",
+                width: "13.75rem",
+                maxHeight: "13.75rem",
+                overflowY: "auto",
+                background: "#FFFFFF",
+                border: "1px solid #DBDBDB",
+                boxShadow: "0 0.125rem 0.625rem rgba(0,0,0,0.12)",
+                zIndex: 200,
+              }}
+            >
+              {/* All sempre a dalt */}
+              <div
+                onClick={() => {
+                  onSelectLibraryType?.("All");
+                  setOpenLibraryType(false);
+                }}
+                style={{
+                  padding: "0.625rem 0.75rem",
+                  font: "normal normal normal 0.875rem/1.125rem Noto Sans",
+                  color: selectedLibraryType === "All" ? "#0F6641" : "#4B4B4B",
+                  background: selectedLibraryType === "All" ? "#F2F2F2" : "#FFFFFF",
+                  cursor: "pointer",
+                }}
+              >
+                All
+              </div>
+
+              {sortedLibraryTypes.map((t) => (
+                <div
+                  key={t}
+                  onClick={() => {
+                    onSelectLibraryType?.(t);
+                    setOpenLibraryType(false);
+                  }}
+                  style={{
+                    padding: "0.625rem 0.75rem",
+                    font: "normal normal normal 0.875rem/1.125rem Noto Sans",
+                    color: selectedLibraryType === t ? "#0F6641" : "#4B4B4B",
+                    background: selectedLibraryType === t ? "#F2F2F2" : "#FFFFFF",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F5F5F5")}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = selectedLibraryType === t ? "#F2F2F2" : "#FFFFFF")
+                  }
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

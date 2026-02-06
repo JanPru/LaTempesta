@@ -1,5 +1,6 @@
 // src/pages/MapPage.jsx
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import Map, { Source, Layer, Marker } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Papa from "papaparse";
@@ -11,6 +12,7 @@ import TopBrand from "../components/TopBrand";
 
 export default function MapPage() {
   const mapRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   const [fullGeojson, setFullGeojson] = useState(null);
   const [geojson, setGeojson] = useState(null);
@@ -27,8 +29,34 @@ export default function MapPage() {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
 
-  // ✅ BOTTOM FILTER SELECTED
+  // ✅ LIBRARY TYPE FILTER
+  const [libraryTypes, setLibraryTypes] = useState([]);
+  const [selectedLibraryType, setSelectedLibraryType] = useState("All");
+
+  // ✅ BOTTOM FILTER SELECTED - Initialize from URL param if present
+  const validFilters = ["library_status", "type_connect", "not_connect", "perceived_quality"];
   const [activeBottomFilter, setActiveBottomFilter] = useState("library_status");
+
+  // Sync filter from URL when searchParams change
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam && validFilters.includes(filterParam)) {
+      setActiveBottomFilter(filterParam);
+    }
+  }, [searchParams]);
+
+  // =========================================================
+  // ✅ LIBRARY TYPE column
+  // =========================================================
+  const LIBRARY_TYPE_COL = "Select the library type";
+
+  const normalizeLibraryType = (raw) => {
+    const s = String(raw ?? "").trim();
+    if (!s || s.toLowerCase() === "other (specify)" || s.toLowerCase() === "other") {
+      return "Other";
+    }
+    return s;
+  };
 
     // =========================================================
   // ✅ PERCEIVED QUALITY (0-100) column + bucket
@@ -170,24 +198,55 @@ export default function MapPage() {
       .toLowerCase()
       .trim();
 
+  // Normalize country names to handle variations like "United States" vs "United States of America"
+  const COUNTRY_ALIASES = {
+    "united states of america": "united states",
+    "usa": "united states",
+    "u.s.a.": "united states",
+    "u.s.": "united states",
+    "uk": "united kingdom",
+    "great britain": "united kingdom",
+    "republic of korea": "south korea",
+    "democratic republic of the congo": "dr congo",
+    "drc": "dr congo",
+  };
+
+  const normalizeCountry = (s) => {
+    const n = normalize(s);
+    return COUNTRY_ALIASES[n] || n;
+  };
+
   const extractCountryFromProps = (props) => {
-    const keys = [
-      "country",
-      "Country",
-      "COUNTRY",
-      "admin",
-      "ADMIN",
-      "nation",
-      "Nation",
-      "país",
-      "pais",
-      "País",
-      "Pais",
-    ];
-    for (const k of keys) {
-      if (props && props[k]) return String(props[k]).trim();
+    // IMPORTANT: Use the survey question column which contains the actual library location
+    // The "Country" column is the IP-detected country of the respondent (often incorrect)
+    const surveyCountryCol = "In which country is your library located?";
+    if (props && props[surveyCountryCol]) {
+      return String(props[surveyCountryCol]).trim();
     }
     return "";
+  };
+
+  // Extract lat/lon from "Address and/or GPS coordinates (exact location)" column
+  const GPS_COL = "Address and/or GPS coordinates (exact location)";
+  const extractCoordsFromGPSColumn = (value) => {
+    if (!value) return null;
+    const str = String(value).trim();
+    
+    // Match decimal coordinates like "8.983001720327056, 38.79626892692866" or "-22.55626208484017, 17.086445512838992"
+    const decimalMatch = str.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+    if (decimalMatch) {
+      const lat = parseFloat(decimalMatch[1]);
+      const lon = parseFloat(decimalMatch[2]);
+      // Basic validation: lat should be between -90 and 90, lon between -180 and 180
+      if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+        return { lat, lon };
+      }
+      // If lat seems to be lon (>90), swap them
+      if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) {
+        return { lat: lon, lon: lat };
+      }
+    }
+    return null;
   };
 
   // =========================================================
@@ -613,57 +672,88 @@ export default function MapPage() {
     setHoveredFeature(null);
   }, [hoveredFeature]);
 
-  const handleSelectCountry = useCallback(
-    (country) => {
-      setSelectedCountry(country);
-
+  // =========================================================
+  // ✅ Combined filter function for country + library type
+  // =========================================================
+  const applyFilters = useCallback(
+    (country, libType, shouldZoom = false) => {
       if (!fullGeojson) return;
 
-      if (!country || country === "Worldwide") {
-        setGeojson(fullGeojson);
-        setCountryStats(globalStats);
+      let filteredFeatures = fullGeojson.features;
 
-        if (mapRef.current && fullGeojson.features.length) {
-          const bounds = fullGeojson.features.reduce(
-            (acc, f) => {
-              const [lon, lat] = f.geometry.coordinates;
-              return [
-                [Math.min(acc[0][0], lon), Math.min(acc[0][1], lat)],
-                [Math.max(acc[1][0], lon), Math.max(acc[1][1], lat)],
-              ];
-            },
-            [[Infinity, Infinity], [-Infinity, -Infinity]]
-          );
-
-          mapRef.current.getMap().fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
-            duration: 800,
-            maxZoom: 3.5,
-          });
-        }
-        return;
+      // Filter by country
+      if (country && country !== "Worldwide") {
+        const n = normalizeCountry(country);
+        filteredFeatures = filteredFeatures.filter(
+          (f) => normalizeCountry(f.properties?.__country) === n
+        );
       }
 
-      const n = normalize(country);
-      const filteredFeatures = fullGeojson.features.filter(
-        (f) => normalize(f.properties?.__country) === n
-      );
+      // Filter by library type
+      if (libType && libType !== "All") {
+        filteredFeatures = filteredFeatures.filter(
+          (f) => f.properties?.__libraryType === libType
+        );
+      }
 
       setGeojson({ type: "FeatureCollection", features: filteredFeatures });
       setCountryStats(computeStatsFromFeatures(filteredFeatures));
 
-      if (mapRef.current && countryBBoxes) {
-        const bbox = countryBBoxes[n];
-        if (bbox) {
-          mapRef.current.getMap().fitBounds(bbox, {
-            padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
-            duration: 800,
-            maxZoom: 5.0,
-          });
+      // Only zoom if shouldZoom is true (country filter changes)
+      if (!shouldZoom) return;
+
+      // Fit bounds based on filtered data
+      if (mapRef.current && filteredFeatures.length) {
+        // If filtering by country AND we have bboxes, use country bbox
+        if (country && country !== "Worldwide" && countryBBoxes) {
+          const n = normalizeCountry(country);
+          const bbox = countryBBoxes[n];
+          if (bbox) {
+            mapRef.current.getMap().fitBounds(bbox, {
+              padding: { top: 90, bottom: 90, left: menuOpen ? 420 : 60, right: 80 },
+              duration: 800,
+              maxZoom: 5.0,
+            });
+            return;
+          }
         }
+
+        // Otherwise fit to the filtered points
+        const bounds = filteredFeatures.reduce(
+          (acc, f) => {
+            const [lon, lat] = f.geometry.coordinates;
+            return [
+              [Math.min(acc[0][0], lon), Math.min(acc[0][1], lat)],
+              [Math.max(acc[1][0], lon), Math.max(acc[1][1], lat)],
+            ];
+          },
+          [[Infinity, Infinity], [-Infinity, -Infinity]]
+        );
+
+        mapRef.current.getMap().fitBounds(bounds, {
+          padding: { top: 80, bottom: 80, left: menuOpen ? 420 : 60, right: 60 },
+          duration: 800,
+          maxZoom: 3.5,
+        });
       }
     },
-    [fullGeojson, countryBBoxes, globalStats, menuOpen]
+    [fullGeojson, countryBBoxes, menuOpen]
+  );
+
+  const handleSelectCountry = useCallback(
+    (country) => {
+      setSelectedCountry(country);
+      applyFilters(country, selectedLibraryType, true); // zoom when country changes
+    },
+    [applyFilters, selectedLibraryType]
+  );
+
+  const handleSelectLibraryType = useCallback(
+    (libType) => {
+      setSelectedLibraryType(libType);
+      applyFilters(selectedCountry, libType, false); // no zoom when library type changes
+    },
+    [applyFilters, selectedCountry]
   );
 
   const selectedLibrary = useMemo(() => {
@@ -707,7 +797,7 @@ export default function MapPage() {
         setError("");
         setIsLoading(true);
 
-        const res = await fetch("/arxiu_sortida.csv");
+        const res = await fetch("/dades.csv");
         if (!res.ok) throw new Error(`No puc carregar el CSV: ${res.status}`);
 
         const text = await res.text();
@@ -719,17 +809,23 @@ export default function MapPage() {
         });
 
         const countrySet = new Set();
+        const libraryTypeSet = new Set();
 
         const features = (parsed.data || [])
           .map((row, index) => {
-            const lat = Number(row.lat);
-            const lon = Number(row.lon);
-            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+            // Extract coordinates from GPS column
+            const coords = extractCoordsFromGPSColumn(row[GPS_COL]);
+            if (!coords) return null;
+            const { lat, lon } = coords;
 
-            const { lat: _lat, lon: _lon, ...props } = row;
+            const props = row;
 
             const c = extractCountryFromProps(props);
             if (c) countrySet.add(c);
+
+            // Library type
+            const libType = normalizeLibraryType(props[LIBRARY_TYPE_COL]);
+            if (libType) libraryTypeSet.add(libType);
 
             const dlBucket = getDownloadBucket(props) || "unknown";
             const connBucket = primaryConnectionBucketFromProps(props);
@@ -743,6 +839,7 @@ export default function MapPage() {
               properties: {
                 ...props,
                 __country: c,
+                __libraryType: libType,
                 __dlBucket: dlBucket,
                 __connBucket: connBucket,
                 __reasonBucket: reasonBucket,
@@ -762,7 +859,25 @@ export default function MapPage() {
         setGlobalStats(gStats);
         setCountryStats(gStats);
 
-        setCountries(Array.from(countrySet));
+        // Sort countries alphabetically but put "Other" at the end
+        const sortedCountries = Array.from(countrySet).sort((a, b) => {
+          const aLower = a.toLowerCase();
+          const bLower = b.toLowerCase();
+          if (aLower === "other") return 1;
+          if (bLower === "other") return -1;
+          return a.localeCompare(b);
+        });
+        setCountries(sortedCountries);
+        
+        // Sort library types alphabetically but put "Other" at the end
+        const sortedLibraryTypes = Array.from(libraryTypeSet).sort((a, b) => {
+          const aLower = a.toLowerCase();
+          const bLower = b.toLowerCase();
+          if (aLower === "other") return 1;
+          if (bLower === "other") return -1;
+          return a.localeCompare(b);
+        });
+        setLibraryTypes(sortedLibraryTypes);
 
         setTimeout(() => {
           if (!features.length || !mapRef.current) return;
@@ -994,6 +1109,12 @@ export default function MapPage() {
           setSelectedFeature(null);
           handleSelectCountry(c);
         }}
+        libraryTypes={libraryTypes}
+        selectedLibraryType={selectedLibraryType}
+        onSelectLibraryType={(t) => {
+          setSelectedFeature(null);
+          handleSelectLibraryType(t);
+        }}
         countriesCount={countries.length}
         stats={countryStats}
         selectedLibrary={selectedLibrary}
@@ -1001,7 +1122,7 @@ export default function MapPage() {
         onChangeBottomFilter={setActiveBottomFilter}
       />
 
-      <TopBrand menuOpen={false} />
+      <TopBrand />
 
       {error && (
         <div

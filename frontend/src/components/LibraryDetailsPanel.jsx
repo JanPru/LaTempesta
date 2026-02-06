@@ -498,12 +498,7 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
         }}
       >
         Data source
-        <img
-          src="/img/menuLateral/Information.png"
-          alt="info"
-          title="Survey data source and submission year."
-          style={{ width: "0.69rem", height: "0.69rem", opacity: 0.85 }}
-        />
+        <InfoIconWithTooltip text="Survey data source and submission year." />
       </div>
 
       <div
@@ -1040,7 +1035,50 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
     { label: "Remote access", value: remoteAccessValue, infoText: "Whether digital resources can be accessed outside library premises." },
   ];
 
-  const rowsCapabilities = [];
+  /* =====================
+   * LIBRARY CAPABILITIES
+   * ===================== */
+  const STAFF_DIGITAL_TRAINING_KEY =
+    "Has the library staff received any wider digital skills/literacy training (other than technical training)?";
+
+  const staffDigitalTrainingValue = useMemo(() => getStr(STAFF_DIGITAL_TRAINING_KEY) || "N/A", [p]);
+
+  const TRAINING_TYPE_COLUMNS = [
+    "Basic computer skills (e.g. Microsoft office, email, Internet browsing):What are the types of trainings offered?",
+    "Advanced skills (e.g. digitization, data analysis):What are the types of trainings offered?",
+    "Online safety and cybersecurity:What are the types of trainings offered?",
+    "Use of library resources:What are the types of trainings offered?",
+    "Other (specify):What are the types of trainings offered?",
+  ];
+
+  const trainingTypesValue = useMemo(() => {
+    const types = [];
+    TRAINING_TYPE_COLUMNS.forEach((col) => {
+      if (!hasValue(col)) return;
+
+      const label = beforeColon(col);
+      if (label.toLowerCase().includes("other")) {
+        const otherText = getStr(col);
+        if (otherText) types.push(otherText);
+      } else {
+        types.push(label);
+      }
+    });
+
+    return types.length ? types.join(", ") : "N/A";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p]);
+
+  const DIGITAL_TRAINING_USERS_KEY =
+    "Does your library provide digital skills/digital literacy trainings to library users and community members?";
+
+  const digitalTrainingUsersValue = useMemo(() => getStr(DIGITAL_TRAINING_USERS_KEY) || "N/A", [p]);
+
+  const rowsCapabilities = [
+    { label: "Staff digital skills training", value: staffDigitalTrainingValue, infoText: "Whether the library staff has received wider digital skills/literacy training." },
+    { label: "Types of digital\ntraining offered", value: trainingTypesValue, infoText: "Types of digital skills trainings offered to staff." },
+    { label: "Digital training for users", value: digitalTrainingUsersValue, infoText: "Whether the library provides digital literacy trainings to users and community members." },
+  ];
 
   /* =====================
    * RENDER

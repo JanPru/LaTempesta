@@ -173,7 +173,7 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
                   style={{
                     font: "normal normal 600 14px/16px Noto Sans",
                     color: "#4B4B4B",
-                    whiteSpace: "nowrap",
+                    whiteSpace: "pre-line",
                   }}
                 >
                   {r.label}

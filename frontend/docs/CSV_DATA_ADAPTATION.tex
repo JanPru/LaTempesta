@@ -449,6 +449,8 @@ To use multiple CSV files, modify \texttt{MapPage.jsx} to iterate through an arr
 \hline
 \texttt{src/pages/MapPage.jsx} & Data loading and processing \\
 \hline
+\texttt{src/pages/Home.jsx} & Home page with statistics from CSV \\
+\hline
 \texttt{src/components/MenuLateral.jsx} & Displays statistics and charts \\
 \hline
 \texttt{src/components/LibraryDetailsPanel.jsx} & Library details \\
@@ -457,6 +459,83 @@ To use multiple CSV files, modify \texttt{MapPage.jsx} to iterate through an arr
 \hline
 \texttt{src/components/MapLegend.jsx} & Map legend \\
 \hline
+\texttt{src/components/StatBox.jsx} & Statistics cards on Home page \\
+\hline
+\texttt{src/components/TopBrand.jsx} & Top brand with navigation menu \\
+\hline
 \end{longtable}
+
+\section{Home Page Statistics}
+
+The Home page (\texttt{src/pages/Home.jsx}) loads the same CSV file and calculates three main statistics displayed in StatBox components:
+
+\subsection{Statistics Calculated}
+
+\begin{longtable}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{Statistic}} & \textcolor{white}{\textbf{CSV Column}} & \textcolor{white}{\textbf{Calculation}} \\
+\hline
+Libraries Connected & \texttt{Does the library currently have Internet access?} & Count where value = "Yes" \\
+\hline
+Libraries use DSL & \texttt{What type of internet connection does your library have?} & Count where connection type contains "dsl", "adsl", or "vdsl" \\
+\hline
+Happy with connection (\%) & \texttt{How would you rate the current state of digital infrastructure and devices in your library?} & Percentage with "good" (60-79) or "excellent" (80-100) rating \\
+\hline
+\end{longtable}
+
+\subsection{StatBox Links to Map}
+
+Each StatBox on the Home page links to the Map page with a specific filter pre-applied:
+
+\begin{longtable}{|p{5cm}|p{5cm}|p{4cm}|}
+\hline
+\rowcolor{headerblue}\textcolor{white}{\textbf{StatBox}} & \textcolor{white}{\textbf{Link}} & \textcolor{white}{\textbf{Filter Applied}} \\
+\hline
+"Explore libraries status" & \texttt{/map?filter=library\_status} & Library connection status \\
+\hline
+"Explore types of connection" & \texttt{/map?filter=type\_connect} & Connection type visualization \\
+\hline
+"Explore perceived quality" & \texttt{/map?filter=perceived\_quality} & Quality rating visualization \\
+\hline
+\end{longtable}
+
+\section{URL Parameters}
+
+The MapPage component reads URL parameters to initialize filters:
+
+\begin{lstlisting}
+// MapPage.jsx
+const [searchParams] = useSearchParams();
+
+// Sync filter from URL when searchParams change
+useEffect(() => {
+  const filterParam = searchParams.get("filter");
+  if (filterParam && validFilters.includes(filterParam)) {
+    setActiveBottomFilter(filterParam);
+  }
+}, [searchParams]);
+\end{lstlisting}
+
+Valid filter values: \texttt{library\_status}, \texttt{type\_connect}, \texttt{not\_connect}, \texttt{perceived\_quality}
+
+\section{Navigation}
+
+\subsection{TopBrand Component}
+
+The \texttt{TopBrand} component (used on MapPage) includes a hamburger menu with navigation links:
+
+\begin{itemize}
+  \item Home (\texttt{/})
+  \item About (\texttt{/about})
+  \item Country Profiles (\texttt{/country-profiles})
+\end{itemize}
+
+The menu:
+\begin{itemize}
+  \item Opens when clicking the hamburger icon
+  \item Has the same width as the lateral menu (22.5rem)
+  \item Closes when clicking outside the menu area
+  \item Each link has an associated icon
+\end{itemize}
 
 \end{document}

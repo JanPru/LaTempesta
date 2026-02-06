@@ -206,7 +206,7 @@ export default function Home() {
             unit={connectedFormatted.unit}
             description="libraries connected"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
-            link="#status"
+            link="/map?filter=library_status"
             linkText="Explore libraries status"
             imagePath="/img/Grupo 47.png"
             showGreenCircle={true}
@@ -217,7 +217,7 @@ export default function Home() {
             unit={dslFormatted.unit}
             description="libraries use DSL"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
-            link="#connection"
+            link="/map?filter=type_connect"
             linkText="Explore types of connection"
             imagePath="/img/Grupo 49.png"
           />
@@ -227,7 +227,7 @@ export default function Home() {
             unit="%"
             description="of libraries are happy with their connection"
             text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
-            link="#quality"
+            link="/map?filter=perceived_quality"
             linkText="Explore perceived quality"
             imagePath="/img/Grupo 52.png"
           />
