@@ -146,47 +146,55 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
         <Chevron open={open} />
       </div>
 
-      {/* Content */}
-      {open && (
-        <div style={{ paddingBottom: "0.5rem" }}>
-          {rows.map((r, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "0.75rem",
-                padding: "0.5rem 0",
-              }}
-            >
-              {/* Label with optional info icon */}
+      {/* Content with slide transition */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.25s ease",
+        }}
+      >
+        <div style={{ overflow: "hidden" }}>
+          <div style={{ paddingBottom: "0.5rem" }}>
+            {rows.map((r, idx) => (
               <div
+                key={idx}
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  flexShrink: 0,
-                  maxWidth: "14rem",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                  padding: "0.5rem 0",
                 }}
               >
+                {/* Label with optional info icon */}
                 <div
                   style={{
-                    font: "normal normal 600 14px/16px Noto Sans",
-                    color: "#4B4B4B",
-                    whiteSpace: "pre-line",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    flexShrink: 0,
+                    maxWidth: "14rem",
                   }}
                 >
-                  {r.label}
+                  <div
+                    style={{
+                      font: "normal normal 600 14px/16px Noto Sans",
+                      color: "#4B4B4B",
+                      whiteSpace: "pre-line",
+                    }}
+                  >
+                    {r.label}
+                  </div>
+                  {r.infoText && <InfoIconWithTooltip text={r.infoText} />}
                 </div>
-                {r.infoText && <InfoIconWithTooltip text={r.infoText} />}
-              </div>
 
-              {/* Value (wrap safe) */}
-              <ValueWrap value={r.value} />
-            </div>
-          ))}
+                {/* Value (wrap safe) */}
+                <ValueWrap value={r.value} />
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
 
       <div style={{ borderTop: "1px solid #DBDBDB" }} />
     </div>

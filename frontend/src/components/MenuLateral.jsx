@@ -464,6 +464,7 @@ export default function MenuLateral({
   onChangeBottomFilter,
   
   onMobileExpandedChange,
+  countryHasNoData = false,
 }) {
   const [filters] = useState({
     country: "Country",
@@ -674,6 +675,58 @@ export default function MenuLateral({
             <div style={{ marginTop: "1rem" }}>
               <LibraryDetailsPanel library={selectedLibrary} mode={activeBottomFilter} />
             </div>
+          ) : countryHasNoData ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "2rem 1rem",
+                textAlign: "center",
+              }}
+            >
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={{ marginBottom: "1rem" }}
+              >
+                <path
+                  d="M12 2L1 21h22L12 2z"
+                  fill="none"
+                  stroke="#F82055"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 9v4M12 17h.01"
+                  stroke="#F82055"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div
+                style={{
+                  font: "normal normal bold 1.1rem/1.4rem Noto Sans",
+                  color: "#4B4B4B",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {selectedCountry}
+              </div>
+              <div
+                style={{
+                  font: "normal normal normal 0.95rem/1.4rem Noto Sans",
+                  color: "#939393",
+                }}
+              >
+                No library data available for this country
+              </div>
+            </div>
           ) : (
             <>
               <div
@@ -767,18 +820,56 @@ export default function MenuLateral({
                   <>
                     <NotConnectedOverview internetNo={s.internetNo} totalPoints={s.totalPoints} />
                     <NotConnectedReasonsPie counts={s.notConnectReasonsCounts} />
+                    
+                    {/* Legend for not-connect reasons (mobile only) */}
+                    <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center" }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "0.5rem 1rem",
+                        }}
+                      >
+                        {[
+                          { label: "Infrastructure limitations", color: "#36A2EB" },
+                          { label: "High cost", color: "#FF7A00" },
+                          { label: "Electrical supply issues", color: "#2ECC71" },
+                          { label: "Digital literacy gaps", color: "#8E44AD" },
+                          { label: "Policy/Regulatory barriers", color: "#F1C40F" },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                background: item.color,
+                                flexShrink: 0,
+                                marginTop: "0.2rem",
+                              }}
+                            />
+                            <span
+                              style={{
+                                font: "normal normal normal 12px/16px Noto Sans",
+                                color: "#4B4B4B",
+                              }}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <InfoCard
-                      icon="/img/menuLateral/Icon core-location-pin.png"
-                      iconWidth="0.94rem"
-                      iconHeight="1.31rem"
-                      title={`${(s.totalPoints || 0).toLocaleString()}`}
-                      subtitle="Libraries location mapped"
-                      detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
-                    />
-
                     <InfoCard
                       icon="/img/menuLateral/Icon akar-wifi (1).png"
                       iconWidth="1.25rem"
@@ -1019,6 +1110,63 @@ export default function MenuLateral({
 
             <div style={{ height: "1rem" }} />
           </div>
+        ) : countryHasNoData ? (
+          // ===== Country has no data mode =====
+          <div
+            style={{
+              position: "absolute",
+              top: "16.67%",
+              left: "9.17%",
+              right: "9.17%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              paddingTop: "3rem",
+            }}
+          >
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{ marginBottom: "1.25rem" }}
+            >
+              <path
+                d="M12 2L1 21h22L12 2z"
+                fill="none"
+                stroke="#F82055"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 9v4M12 17h.01"
+                stroke="#F82055"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div
+              style={{
+                font: "normal normal bold 1.25rem/1.56rem Noto Sans",
+                color: "#4B4B4B",
+                marginBottom: "0.5rem",
+              }}
+            >
+              {selectedCountry}
+            </div>
+            <div
+              style={{
+                font: "normal normal normal 1rem/1.4rem Noto Sans",
+                color: "#939393",
+              }}
+            >
+              No library data available for this country
+            </div>
+          </div>
         ) : (
           // ===== Default mode =====
           <>
@@ -1126,15 +1274,6 @@ export default function MenuLateral({
                 </>
               ) : (
                 <>
-                  <InfoCard
-                    icon="/img/menuLateral/Icon core-location-pin.png"
-                    iconWidth="0.94rem"
-                    iconHeight="1.31rem"
-                    title={`${(s.totalPoints || 0).toLocaleString()}`}
-                    subtitle="Libraries location mapped"
-                    detail={selectedCountry === "Worldwide" ? "Worldwide view" : `in ${selectedCountry}`}
-                  />
-
                   <InfoCard
                     icon="/img/menuLateral/Icon akar-wifi (1).png"
                     iconWidth="1.25rem"

@@ -106,39 +106,45 @@ export default function TopBrand() {
         </svg>
       </button>
 
-      {/* Navigation Menu Dropdown */}
-      {navMenuOpen && (
-        <>
-          {/* Overlay per tancar el menú quan es clica fora */}
-          <div
-            onClick={() => setNavMenuOpen(false)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 998,
-            }}
-          />
-          <nav
-            style={{
-              position: "fixed",
-              top: 70,
-              left: 18,
-              width: "22.5rem",
-              backgroundColor: "#FFFFFF",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              padding: "16px 24px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              zIndex: 999,
-              maxHeight: "calc(100vh - 70px)",
-              overflowY: "auto",
-              borderRadius: 4,
-            }}
-          >
+      {/* Navigation Menu Dropdown with slide transition */}
+      <>
+        {/* Overlay per tancar el menú quan es clica fora */}
+        <div
+          onClick={() => setNavMenuOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 998,
+            opacity: navMenuOpen ? 1 : 0,
+            pointerEvents: navMenuOpen ? "auto" : "none",
+            transition: "opacity 0.25s ease",
+          }}
+        />
+        <nav
+          style={{
+            position: "fixed",
+            top: 70,
+            left: 18,
+            width: "22.5rem",
+            backgroundColor: "#FFFFFF",
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            padding: "16px 24px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            zIndex: 999,
+            maxHeight: "calc(100vh - 70px)",
+            overflowY: "auto",
+            borderRadius: 4,
+            transform: navMenuOpen ? "translateY(0)" : "translateY(-10px)",
+            opacity: navMenuOpen ? 1 : 0,
+            pointerEvents: navMenuOpen ? "auto" : "none",
+            transition: "transform 0.25s ease, opacity 0.25s ease",
+          }}
+        >
             <a
               href="/"
               style={styles.mobileNavLink}
@@ -173,7 +179,6 @@ export default function TopBrand() {
             </a>
           </nav>
         </>
-      )}
 
       {/* ✅ BRAND CLICABLE → HOME */}
       <button

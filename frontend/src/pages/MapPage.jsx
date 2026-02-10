@@ -40,6 +40,7 @@ export default function MapPage() {
 
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
+  const [countryHasNoData, setCountryHasNoData] = useState(false);
 
   // ✅ LIBRARY TYPE FILTER
   const [libraryTypes, setLibraryTypes] = useState([]);
@@ -696,10 +697,21 @@ export default function MapPage() {
       // Filter by country
       if (country && country !== "Worldwide") {
         const n = normalizeCountry(country);
-        filteredFeatures = filteredFeatures.filter(
+        const countryFeatures = filteredFeatures.filter(
           (f) => normalizeCountry(f.properties?.__country) === n
         );
+        
+        // Check if country has no libraries
+        if (countryFeatures.length === 0) {
+          setCountryHasNoData(true);
+          // Don't filter the map and don't zoom - keep all points visible
+          return;
+        }
+        
+        filteredFeatures = countryFeatures;
       }
+      
+      setCountryHasNoData(false);
 
       // Filter by library type
       if (libType && libType !== "All") {
@@ -1160,6 +1172,7 @@ export default function MapPage() {
         activeBottomFilter={activeBottomFilter}
         onChangeBottomFilter={setActiveBottomFilter}
         onMobileExpandedChange={setMobileMenuExpanded}
+        countryHasNoData={countryHasNoData}
       />
 
       <TopBrand />
@@ -1214,6 +1227,7 @@ export default function MapPage() {
             />
 
           {selectedCountry !== "Worldwide" &&
+          !countryHasNoData &&
           activeBottomFilter !== "type_connect" &&
           activeBottomFilter !== "perceived_quality" &&
           activeBottomFilter !== "not_connect" && (

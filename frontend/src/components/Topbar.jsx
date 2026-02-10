@@ -153,12 +153,16 @@ export default function Topbar() {
               <span style={styles.hamburgerLine}></span>
             </button>
 
-            {/* Conditionally rendered mobile nav */}
-            {menuOpen && (
-              <nav style={styles.mobileNav}>
-                <NavLinks mobile />
-              </nav>
-            )}
+            {/* Mobile nav with slide transition */}
+            <nav style={{
+              ...styles.mobileNav,
+              transform: menuOpen ? "translateY(0)" : "translateY(-10px)",
+              opacity: menuOpen ? 1 : 0,
+              pointerEvents: menuOpen ? "auto" : "none",
+              transition: "transform 0.25s ease, opacity 0.25s ease",
+            }}>
+              <NavLinks mobile />
+            </nav>
           </div>
         ) : (
           // Desktop view: render horizontal nav

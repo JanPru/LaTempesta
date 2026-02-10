@@ -1,0 +1,403 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{longtable}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+
+% Define colors
+\definecolor{headergreen}{RGB}{15,102,65}
+\definecolor{accentred}{RGB}{201,0,48}
+
+% Title formatting
+\titleformat{\section}{\Large\bfseries\color{headergreen}}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{headergreen}}{\thesubsection}{1em}{}
+
+\title{\textbf{Libraries Boosting Connectivity}\\[0.5em]\large Project Documentation}
+\author{Technical Documentation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Project Overview}
+% ============================================================================
+
+\textbf{Libraries Boosting Connectivity} is an interactive web application designed to visualize and explore global library connectivity data. The project aims to provide a comprehensive picture of the state of digital infrastructure in libraries worldwide.
+
+\subsection{Purpose}
+
+The application serves as a tool for:
+\begin{itemize}
+    \item Visualizing library connectivity data on an interactive map
+    \item Exploring statistics about internet access, connection types, and perceived quality
+    \item Filtering and analyzing data by country and library type
+    \item Understanding the challenges libraries face regarding digital connectivity
+\end{itemize}
+
+\subsection{Technology Stack}
+
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Technology} & \textbf{Purpose} \\
+\hline
+React 19 & Frontend framework for building the user interface \\
+\hline
+Vite & Build tool and development server \\
+\hline
+Mapbox GL & Interactive map rendering and visualization \\
+\hline
+react-map-gl & React wrapper for Mapbox GL \\
+\hline
+PapaParse & CSV file parsing for data loading \\
+\hline
+React Router & Client-side navigation between pages \\
+\hline
+Tailwind CSS & Utility-first CSS framework for styling \\
+\hline
+\end{longtable}
+
+% ============================================================================
+\section{Application Architecture}
+% ============================================================================
+
+The application follows a component-based architecture with clear separation between pages and reusable components.
+
+\subsection{Project Structure}
+
+\begin{verbatim}
+frontend/
+├── public/           # Static assets and CSV data files
+│   ├── arxiu_sortida.csv
+│   ├── dades.csv
+│   └── img/          # Images and icons
+├── src/
+│   ├── App.jsx       # Main application component with routing
+│   ├── main.jsx      # Application entry point
+│   ├── components/   # Reusable UI components
+│   ├── pages/        # Page-level components
+│   ├── assets/       # Application assets
+│   └── styles/       # Global styles
+└── docs/             # Documentation
+\end{verbatim}
+
+% ============================================================================
+\section{Pages}
+% ============================================================================
+
+The application consists of three main pages accessible through the navigation.
+
+\subsection{Home Page}
+
+The landing page of the application featuring:
+\begin{itemize}
+    \item Hero section with project introduction and call-to-action buttons
+    \item Animated network visualization representing library connections
+    \item Statistical summary boxes showing key metrics:
+    \begin{itemize}
+        \item Number of connected libraries
+        \item Libraries using DSL connections
+        \item Percentage of libraries satisfied with their connection
+    \end{itemize}
+    \item Footer with navigation links
+\end{itemize}
+
+The statistics are dynamically calculated from the CSV data and link to the Map page with corresponding filters applied.
+
+\subsection{Map Page}
+
+The core of the application, providing an interactive map visualization:
+\begin{itemize}
+    \item Full-screen Mapbox map with library markers
+    \item Side panel with filters and statistics
+    \item Multiple visualization modes (library status, connection type, perceived quality, not connected)
+    \item Country and library type filtering
+    \item Responsive design with mobile-optimized layout
+    \item Legend display for current visualization mode
+\end{itemize}
+
+\subsection{About Page}
+
+Information page describing the project's mission, methodology, and team.
+
+% ============================================================================
+\section{Components}
+% ============================================================================
+
+\subsection{Navigation Components}
+
+\subsubsection{Topbar}
+The main navigation header displayed on Home and About pages. Features:
+\begin{itemize}
+    \item Brand logo linking to home
+    \item Navigation links (About, Country Profiles, Explore LBC Map)
+    \item Responsive hamburger menu for mobile devices
+\end{itemize}
+
+\subsubsection{TopBrand}
+Compact brand component used on the Map page. Features:
+\begin{itemize}
+    \item Hamburger menu with dropdown navigation
+    \item Brand logo and title
+    \item Menu closes when clicking outside
+\end{itemize}
+
+\subsubsection{Footer}
+Page footer with:
+\begin{itemize}
+    \item Partner logos
+    \item Navigation links
+    \item Copyright information
+\end{itemize}
+
+\subsection{Map Components}
+
+\subsubsection{MenuLateral (Side Panel)}
+The main control panel for the map, featuring:
+\begin{itemize}
+    \item Country and library type dropdown filters
+    \item Statistics display (InfoCards) showing connectivity metrics
+    \item Connection type distribution charts
+    \item Perceived quality visualization
+    \item Bottom filter buttons for switching visualization modes
+    \item Collapsible design with smooth animations
+    \item Mobile-responsive bottom sheet layout
+\end{itemize}
+
+\subsubsection{MapLegend}
+Dynamic legend component that changes based on the active visualization mode:
+\begin{itemize}
+    \item \textbf{Library Status}: Connected/Not connected/Unknown
+    \item \textbf{Type of Connection}: Fiber, DSL, Satellite, Cable, Mobile data, etc.
+    \item \textbf{Perceived Quality}: Very poor to Excellent scale
+    \item \textbf{Not Connected}: Reasons for lack of connectivity
+\end{itemize}
+
+\subsubsection{LibraryInfoPopup}
+Popup displayed when hovering over a library marker showing basic library information.
+
+\subsubsection{LibraryDetailsPanel}
+Detailed information panel shown when a library is selected. Displays:
+\begin{itemize}
+    \item Library name, type, and country
+    \item Data source information
+    \item Expandable sections with detailed connectivity data
+    \item Target audience information
+    \item Services affected by connectivity issues
+\end{itemize}
+
+\subsubsection{LibrarySectionCard}
+Collapsible card component used within LibraryDetailsPanel to organize information into expandable sections.
+
+\subsection{Filter Components}
+
+\subsubsection{FilterHeader}
+Header section of the side panel containing:
+\begin{itemize}
+    \item Title and share button
+    \item Country dropdown selector
+    \item Library type dropdown selector
+\end{itemize}
+
+\subsubsection{BottomFilters}
+Row of filter buttons for switching between visualization modes:
+\begin{itemize}
+    \item Library Status (default)
+    \item Type of Connection
+    \item Not Connected
+    \item Perceived Quality
+\end{itemize}
+
+Each filter has an info tooltip explaining its purpose.
+
+\subsection{Statistics Components}
+
+\subsubsection{StatBox}
+Card component displaying a statistic with:
+\begin{itemize}
+    \item Large number with optional unit
+    \item Description text
+    \item Link to explore more on the map
+    \item Decorative image
+\end{itemize}
+
+\subsubsection{InfoCard}
+Compact statistics card used in the side panel showing:
+\begin{itemize}
+    \item Metric value and description
+    \item Icon representation
+    \item Distribution bars (for quality metrics)
+\end{itemize}
+
+\subsection{Visual Components}
+
+\subsubsection{AnimatedNetwork}
+Decorative animated visualization on the Home page representing a network of connected nodes, symbolizing library connectivity.
+
+% ============================================================================
+\section{Data Flow}
+% ============================================================================
+
+\subsection{Data Sources}
+
+The application loads data from CSV files stored in the \texttt{public/} directory:
+\begin{itemize}
+    \item \textbf{dades.csv}: Main library data with coordinates and connectivity information
+    \item \textbf{arxiu\_sortida.csv}: Processed data for statistics
+\end{itemize}
+
+\subsection{Data Processing}
+
+When the application loads:
+\begin{enumerate}
+    \item CSV files are fetched and parsed using PapaParse
+    \item Data is transformed into GeoJSON format for map visualization
+    \item Statistics are computed (connection counts, quality percentages, etc.)
+    \item Data is categorized into buckets (download speed, connection type, quality)
+\end{enumerate}
+
+\subsection{Filtering}
+
+Users can filter data by:
+\begin{itemize}
+    \item \textbf{Country}: Shows only libraries from selected country
+    \item \textbf{Library Type}: Filters by library category (Public, Academic, etc.)
+    \item \textbf{Visualization Mode}: Changes how markers are colored on the map
+\end{itemize}
+
+% ============================================================================
+\section{Visualization Modes}
+% ============================================================================
+
+\subsection{Library Status (Default)}
+
+Colors libraries based on internet access:
+\begin{itemize}
+    \item \textcolor{green}{\textbf{Green}}: Connected to internet
+    \item \textcolor{red}{\textbf{Red}}: Not connected
+    \item \textcolor{cyan}{\textbf{Cyan}}: Unknown status
+\end{itemize}
+
+\subsection{Type of Connection}
+
+Shows the type of internet connection each library uses:
+\begin{itemize}
+    \item Fiber optic, DSL, Satellite, Cable, Mobile data, Other, Unknown
+\end{itemize}
+
+\subsection{Perceived Quality}
+
+Visualizes how libraries rate their digital infrastructure:
+\begin{itemize}
+    \item Scale from Very Poor (0-19) to Excellent (80-100)
+\end{itemize}
+
+\subsection{Not Connected}
+
+Shows only libraries without internet and their reasons:
+\begin{itemize}
+    \item Infrastructure limitations
+    \item High cost
+    \item Electrical supply issues
+    \item Digital literacy gaps
+    \item Policy/Regulatory barriers
+\end{itemize}
+
+% ============================================================================
+\section{Responsive Design}
+% ============================================================================
+
+The application is fully responsive with specific adaptations for mobile devices:
+
+\subsection{Desktop Layout}
+\begin{itemize}
+    \item Side panel on the left with collapsible toggle
+    \item Legend positioned at bottom-right of map
+    \item Full filter controls visible
+\end{itemize}
+
+\subsection{Mobile Layout}
+\begin{itemize}
+    \item Bottom sheet panel that can be expanded/collapsed
+    \item Floating info button to show legend in modal
+    \item Optimized zoom padding to account for bottom panel
+    \item Touch-friendly interactions
+\end{itemize}
+
+% ============================================================================
+\section{URL Parameters}
+% ============================================================================
+
+The Map page supports URL parameters for deep linking:
+
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Parameter} & \textbf{Description} \\
+\hline
+\texttt{filter} & Sets the initial visualization mode. Valid values: \texttt{library\_status}, \texttt{type\_connect}, \texttt{not\_connect}, \texttt{perceived\_quality} \\
+\hline
+\end{longtable}
+
+Example: \texttt{/map?filter=perceived\_quality}
+
+% ============================================================================
+\section{User Interactions}
+% ============================================================================
+
+\subsection{Map Interactions}
+
+\begin{itemize}
+    \item \textbf{Click on library}: Selects library and shows details panel
+    \item \textbf{Click on country}: Zooms to country and filters data
+    \item \textbf{Click on sea/empty area}: Resets to worldwide view
+    \item \textbf{Hover on library}: Shows popup with basic info
+\end{itemize}
+
+\subsection{Panel Interactions}
+
+\begin{itemize}
+    \item \textbf{Country dropdown}: Filter libraries by country
+    \item \textbf{Library type dropdown}: Filter by library category
+    \item \textbf{Bottom filter buttons}: Switch visualization mode
+    \item \textbf{Arrow toggle}: Expand/collapse side panel (desktop) or bottom sheet (mobile)
+\end{itemize}
+
+% ============================================================================
+\section{Deployment}
+% ============================================================================
+
+The application is configured for deployment on Vercel with the following setup:
+
+\begin{itemize}
+    \item Build command: \texttt{npm run build}
+    \item Output directory: \texttt{dist}
+    \item Environment variables required: \texttt{VITE\_MAPBOX\_TOKEN}
+\end{itemize}
+
+% ============================================================================
+\section{Future Considerations}
+% ============================================================================
+
+Potential areas for expansion:
+\begin{itemize}
+    \item Country Profiles page (currently linked but not implemented)
+    \item Additional data visualization charts
+    \item Data export functionality
+    \item Multi-language support
+    \item Real-time data updates
+\end{itemize}
+
+\end{document}
