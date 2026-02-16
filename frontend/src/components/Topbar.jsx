@@ -73,13 +73,6 @@ export default function Topbar() {
       >
         About
       </a>
-      <a
-        href="/country-profiles"
-        style={mobile ? styles.mobileNavLink : styles.navLink}
-        onClick={mobile ? toggleMenu : undefined}
-      >
-        Country Profiles
-      </a>
 
       {/* The map link is styled separately to keep the brand colour. */}
       {mobile ? (

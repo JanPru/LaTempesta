@@ -1135,7 +1135,12 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
         </div>
       ) : (
         /* ✅ DEFAULT MODE (library_status, etc.) */
-        <div style={{ marginTop: "0.25rem" }}>
+        <div
+          style={{
+            marginTop: "0.25rem",
+            marginBottom: window.innerWidth <= 768 ? "0.15rem" : "0.5rem"
+          }}
+        >
           <LibrarySectionCard title="Basic information" rows={rowsBasic} defaultOpen />
           <LibrarySectionCard title="Internet access" rows={rowsInternet} defaultOpen={false} />
           <LibrarySectionCard title="Digital resources" rows={rowsDigital} defaultOpen={false} />

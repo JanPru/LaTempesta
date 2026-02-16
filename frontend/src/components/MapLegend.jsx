@@ -125,8 +125,8 @@ function DownloadDot({ haloColor }) {
 
 function Row({ label, icon }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-      {icon}
+    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", height: "16px" }}>{icon}</div>
       <span
         style={{
           textAlign: "left",
@@ -136,6 +136,9 @@ function Row({ label, icon }) {
           opacity: 1,
           whiteSpace: "normal", // ✅ wrap
           lineHeight: "16px",
+          display: "flex",
+          alignItems: "center",
+          height: "16px",
         }}
       >
         {label}

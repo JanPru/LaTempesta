@@ -30,7 +30,6 @@ export default function Footer() {
         <nav style={styles.navSection}>
           <Link to="/" style={styles.navLink}>Home</Link>
           <Link to="/about" style={styles.navLink}>About</Link>
-          <Link to="/country-profiles" style={styles.navLink}>Country profiles</Link>
           <Link to="/map" style={styles.exploreButton}>
             <span style={styles.exploreButtonText}>Explore LBC Map</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={styles.exploreButtonIcon}>

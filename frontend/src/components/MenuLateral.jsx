@@ -226,6 +226,8 @@ function NotConnectedOverview({ internetNo, totalPoints }) {
 
 function TypeOfConnectionCard({ counts }) {
   const c = counts || {};
+  // Calculem el total de biblioteques per percentatge
+  const total = Object.values(c).reduce((acc, v) => acc + (Number(v) || 0), 0) || 1;
 
   const data = [
     { key: "optic_fiber", label: "Optic\nfiber", color: "#FF2AAE" },
@@ -235,11 +237,15 @@ function TypeOfConnectionCard({ counts }) {
     { key: "mobile_data", label: "Mobile\ndata", color: "#1E5BFF" },
     { key: "other", label: "Other", color: "#7A1FFF" },
     { key: "unknown", label: "Unknown", color: "#27C7D8" },
-  ].map((d) => ({ ...d, rawValue: Number(c[d.key] || 0) }));
+  ].map((d) => {
+    const rawValue = Number(c[d.key] || 0);
+    const pct = total ? (rawValue / total) * 100 : 0;
+    return { ...d, rawValue, pct };
+  });
 
   const max = Math.max(...data.map((d) => d.rawValue), 1);
 
-  const MAX_BAR_PCT = 85;
+  const MAX_BAR_PCT = 65;
   const CHART_SHIFT_LEFT = 0.85;
 
   return (
@@ -272,8 +278,10 @@ function TypeOfConnectionCard({ counts }) {
           <div style={{ marginLeft: `-${CHART_SHIFT_LEFT}rem` }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
               {data.map((d) => {
-                const pct = (d.rawValue / max) * MAX_BAR_PCT;
+                const pctBar = (d.rawValue / max) * MAX_BAR_PCT;
                 const fk = formatK(d.rawValue);
+                // Mostra el percentatge amb 1 decimal si <10%, sinó arrodonit
+                const pctText = d.rawValue === 0 ? "" : ` (${d.pct < 10 ? d.pct.toFixed(1) : Math.round(d.pct)}%)`;
 
                 return (
                   <div
@@ -299,7 +307,7 @@ function TypeOfConnectionCard({ counts }) {
                       <div
                         style={{
                           height: "0.38rem",
-                          width: `${pct}%`,
+                          width: `${pctBar}%`,
                           background: d.color,
                         }}
                       />
@@ -307,7 +315,7 @@ function TypeOfConnectionCard({ counts }) {
                       <div
                         style={{
                           position: "absolute",
-                          left: `${pct}%`,
+                          left: `${pctBar}%`,
                           top: "50%",
                           transform: "translate(0.35rem, -50%)",
                           font: "normal normal normal 0.875rem/1rem Noto Sans",
@@ -316,7 +324,7 @@ function TypeOfConnectionCard({ counts }) {
                           pointerEvents: "none",
                         }}
                       >
-                        {fk.value} {fk.unit}
+                        {fk.value} {fk.unit}{pctText}
                       </div>
                     </div>
                   </div>
@@ -332,6 +340,8 @@ function TypeOfConnectionCard({ counts }) {
 
 function PerceivedQualityCard({ counts }) {
   const c = counts || {};
+  // Calculem el total de biblioteques per percentatge
+  const total = Object.values(c).reduce((acc, v) => acc + (Number(v) || 0), 0) || 1;
 
   const data = [
     { key: "very_poor", label: "Very\npoor", color: "#F82055" },
@@ -339,11 +349,15 @@ function PerceivedQualityCard({ counts }) {
     { key: "fair", label: "Fair", color: "#FFD400" },
     { key: "good", label: "Good", color: "#8BE04E" },
     { key: "excellent", label: "Excellent", color: "#2EAD27" },
-  ].map((d) => ({ ...d, rawValue: Number(c[d.key] || 0) }));
+  ].map((d) => {
+    const rawValue = Number(c[d.key] || 0);
+    const pct = total ? (rawValue / total) * 100 : 0;
+    return { ...d, rawValue, pct };
+  });
 
   const max = Math.max(...data.map((d) => d.rawValue), 1);
 
-  const MAX_BAR_PCT = 85;
+  const MAX_BAR_PCT = 65;
   const CHART_SHIFT_LEFT = 0.85;
   const LABEL_COL_REM = 3.7;
 
@@ -377,8 +391,10 @@ function PerceivedQualityCard({ counts }) {
           <div style={{ marginLeft: `-${CHART_SHIFT_LEFT}rem` }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
               {data.map((d) => {
-                const pct = (d.rawValue / max) * MAX_BAR_PCT;
+                const pctBar = (d.rawValue / max) * MAX_BAR_PCT;
                 const fk = formatK(d.rawValue);
+                // Mostra el percentatge amb 1 decimal si <10%, sinó arrodonit
+                const pctText = d.rawValue === 0 ? "" : ` (${d.pct < 10 ? d.pct.toFixed(1) : Math.round(d.pct)}%)`;
 
                 return (
                   <div
@@ -404,7 +420,7 @@ function PerceivedQualityCard({ counts }) {
                       <div
                         style={{
                           height: "0.38rem",
-                          width: `${Math.max(0, Math.min(100, pct))}%`,
+                          width: `${pctBar}%`,
                           background: d.color,
                         }}
                       />
@@ -412,7 +428,7 @@ function PerceivedQualityCard({ counts }) {
                       <div
                         style={{
                           position: "absolute",
-                          left: `${Math.max(0, Math.min(100, pct))}%`,
+                          left: `${pctBar}%`,
                           top: "50%",
                           transform: "translate(0.35rem, -50%)",
                           font: "normal normal normal 0.875rem/1rem Noto Sans",
@@ -424,7 +440,7 @@ function PerceivedQualityCard({ counts }) {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {fk.value} {fk.unit}
+                        {fk.value} {fk.unit}{pctText}
                       </div>
                     </div>
                   </div>
@@ -467,7 +483,6 @@ export default function MenuLateral({
   countryHasNoData = false,
 }) {
   const [filters] = useState({
-    country: "Country",
     typeOfLibrary: "Type of library",
   });
 
@@ -920,6 +935,42 @@ export default function MenuLateral({
                           : null
                       }
                     />
+                    {/* Legend for download speed (below InfoCard) - always visible if downloadMeasured exists */}
+                    {s.downloadMeasured ? (
+                      <div
+                        style={{
+                          marginTop: "0.5rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: "0.3rem",
+                          font: "normal normal normal 1rem/1.56rem Noto Sans",
+                          color: "#939393",
+                          marginLeft: "3.7rem", // aligns with progress bar start
+                        }}
+                      >
+                        {[
+                          { label: "Slow (<2 Mbps)", color: "#F82055", value: s.dlRed },
+                          { label: "Moderate (2-10 Mbps)", color: "#F9A825", value: s.dlOrange },
+                          { label: "Good (>10 Mbps)", color: "#3ED896", value: s.dlGreen },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <span style={{ width: 12, height: 12, borderRadius: "50%", background: item.color, display: "inline-block", marginRight: 6, border: "1px solid #ddd" }} />
+                            <span style={{ color: "#4B4B4B", minWidth: 110 }}>{item.label}</span>
+                            <span style={{ color: "#4B4B4B", fontWeight: 500, marginLeft: 6 }}>
+                              {s.downloadMeasured ? `${Math.round((item.value / s.downloadMeasured) * 100)}%` : "-"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </>
                 )}
               </div>
@@ -1324,6 +1375,42 @@ export default function MenuLateral({
                         : null
                     }
                   />
+                   {/* Legend for download speed (below InfoCard) - always visible if downloadMeasured exists */}
+                    {s.downloadMeasured ? (
+                      <div
+                        style={{
+                          marginTop: "0.3rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: "0.3rem",
+                          font: "normal normal normal 1rem/1.56rem Noto Sans",
+                          color: "#939393",
+                          marginLeft: "2rem", // aligns with progress bar start
+                        }}
+                      >
+                        {[
+                          { label: "Slow (<2 Mbps)", color: "#F82055", value: s.dlRed },
+                          { label: "Moderate (2-10 Mbps)", color: "#F9A825", value: s.dlOrange },
+                          { label: "Good (>10 Mbps)", color: "#3ED896", value: s.dlGreen },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <span style={{ width: 12, height: 12, borderRadius: "50%", background: item.color, display: "inline-block", marginRight: 6, border: "1px solid #ddd" }} />
+                            <span style={{ color: "#4B4B4B", minWidth: 110 }}>{item.label}</span>
+                            <span style={{ color: "#4B4B4B", fontWeight: 500, marginLeft: 6 }}>
+                              {s.downloadMeasured ? `${Math.round((item.value / s.downloadMeasured) * 100)}%` : "-"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                 </>
               )}
             </div>

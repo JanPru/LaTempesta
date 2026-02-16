@@ -166,17 +166,6 @@ export default function TopBrand() {
               </svg>
               About
             </a>
-            <a
-              href="/country-profiles"
-              style={styles.mobileNavLink}
-              onClick={() => setNavMenuOpen(false)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10" stroke="#0F6641" strokeWidth="2"/>
-                <path d="M2 12H22M12 2C14.5 4.5 16 8 16 12C16 16 14.5 19.5 12 22M12 2C9.5 4.5 8 8 8 12C8 16 9.5 19.5 12 22" stroke="#0F6641" strokeWidth="2"/>
-              </svg>
-              Country Profiles
-            </a>
           </nav>
         </>
 
