@@ -72,7 +72,7 @@ export default function Home() {
     const loadStats = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/arxiu_sortida.csv");
+        const res = await fetch("/dades.csv");
         if (!res.ok) throw new Error("Failed to load CSV");
 
         const text = await res.text();
@@ -87,12 +87,22 @@ export default function Home() {
         let dslCount = 0;
         let goodOrExcellent = 0;
         let totalWithQuality = 0;
+        let totalLibraries = 0;
+        let digitalTrainingYes = 0;
 
         for (const row of parsed.data || []) {
+          // Count total libraries
+          totalLibraries++;
           // Count libraries connected to internet
           const internetAccess = String(row["Does the library currently have Internet access?"] ?? "").trim().toLowerCase();
           if (internetAccess === "yes") {
             internetYes++;
+          }
+
+          // Count libraries providing digital skills/literacy training
+          const digitalTraining = String(row["Has the library staff received any wider digital skills/literacy training (other than technical training)?"] ?? "").trim().toLowerCase();
+          if (digitalTraining === "yes") {
+            digitalTrainingYes++;
           }
 
           // Count DSL connections
@@ -119,10 +129,20 @@ export default function Home() {
           ? Math.round((goodOrExcellent / totalWithQuality) * 100) 
           : 0;
 
+        const internetPercentage = totalLibraries > 0
+          ? ((internetYes / totalLibraries) * 100).toFixed(1)
+          : "0.0";
+
+        const digitalTrainingPercentage = totalLibraries > 0
+          ? ((digitalTrainingYes / totalLibraries) * 100).toFixed(1)
+          : "0.0";
+
         setStats({
           librariesConnected: internetYes,
           librariesDSL: dslCount,
           happyPercentage: happyPercentage,
+          internetPercentage: internetPercentage,
+          digitalTrainingPercentage: digitalTrainingPercentage,
         });
         setIsLoading(false);
       } catch (err) {
@@ -147,7 +167,9 @@ export default function Home() {
   };
 
   const connectedFormatted = formatK(stats?.librariesConnected || 0);
+    const internetPercentage = stats?.internetPercentage || "0.0";
   const dslFormatted = formatK(stats?.librariesDSL || 0);
+  const digitalTrainingPercentage = stats?.digitalTrainingPercentage || "0.0";
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingTop: "80px" }}>
@@ -202,10 +224,11 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 py-2">
         <div className="grid md:grid-cols-3 gap-6">
           <StatBox
-            number={isLoading ? "..." : String(connectedFormatted.value)}
-            unit={connectedFormatted.unit}
-            description="libraries connected"
-            text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
+
+            number={isLoading ? "..." : internetPercentage}
+            unit="%"
+            description="of libraries with Internet access"
+            text={<span>{internetPercentage}% libraries in the surveyed countries count with access to the Internet</span>}
             link="/map?filter=library_status"
             linkText="Explore libraries status"
             imagePath="/img/Grupo 47.png"
@@ -213,10 +236,10 @@ export default function Home() {
           />
 
           <StatBox
-            number={isLoading ? "..." : String(dslFormatted.value)}
-            unit={dslFormatted.unit}
-            description="libraries use DSL"
-            text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
+            number={isLoading ? "..." : digitalTrainingPercentage}
+            unit="%"
+            description="providing digital skills trainings"
+            text={<span>{digitalTrainingPercentage}% of surveyed libraries provide digital skills and literacy training to library users and community members</span>}
             link="/map?filter=type_connect"
             linkText="Explore types of connection"
             imagePath="/img/Grupo 49.png"
@@ -226,7 +249,7 @@ export default function Home() {
             number={isLoading ? "..." : String(stats?.happyPercentage || 0)}
             unit="%"
             description="of libraries are happy with their connection"
-            text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod"
+            text={<span>55% of libraries are happy with their connection</span>}
             link="/map?filter=perceived_quality"
             linkText="Explore perceived quality"
             imagePath="/img/Grupo 52.png"

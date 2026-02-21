@@ -154,7 +154,7 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
           transition: "grid-template-rows 0.25s ease",
         }}
       >
-        <div style={{ overflow: "hidden" }}>
+        <div style={{ overflow: open ? "visible" : "hidden" }}>
           <div style={{ paddingBottom: "0.5rem" }}>
             {rows.map((r, idx) => (
               <div
@@ -174,6 +174,7 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
                     gap: "0.35rem",
                     flexShrink: 0,
                     maxWidth: "14rem",
+                    overflow: "visible",
                   }}
                 >
                   <div
@@ -181,6 +182,8 @@ export default function LibrarySectionCard({ title, rows = [], defaultOpen = tru
                       font: "normal normal 600 14px/16px Noto Sans",
                       color: "#4B4B4B",
                       whiteSpace: "pre-line",
+                      flexShrink: 1,
+                      minWidth: 0,
                     }}
                   >
                     {r.label}

@@ -1,5 +1,6 @@
 // src/components/Topbar.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { COUNTRY_LIST } from "../data/countryProfilesData";
 
 // The Topbar component renders a responsive header and navigation menu.
 // On larger screens it displays a horizontal navigation bar. On smaller
@@ -15,6 +16,9 @@ export default function Topbar() {
   // Track whether the mobile menu is open. Only relevant when
   // `isMobile` is true.
   const [menuOpen, setMenuOpen] = useState(false);
+  // Track whether the country profiles dropdown is open (desktop hover / mobile toggle).
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const profilesRef = useRef(null);
 
   useEffect(() => {
     // Determine if the current viewport width is considered mobile.
@@ -73,6 +77,65 @@ export default function Topbar() {
       >
         About
       </a>
+
+      {/* Country profiles with dropdown on desktop only */}
+      {mobile ? (
+        <a
+          href="/country-profiles"
+          style={styles.mobileNavLink}
+          onClick={toggleMenu}
+        >
+          Country profiles
+        </a>
+      ) : (
+        <div
+          ref={profilesRef}
+          style={{ position: "relative" }}
+          onMouseEnter={() => setProfilesOpen(true)}
+          onMouseLeave={() => setProfilesOpen(false)}
+        >
+          <a
+            href="/country-profiles"
+            style={{ ...styles.navLink, display: "flex", alignItems: "center", gap: "5px" }}
+          >
+            Country profiles
+            <span style={{
+              fontSize: "20px",
+              lineHeight: 1,
+              verticalAlign: "middle",
+              display: "inline-block",
+              transition: "transform 0.25s ease",
+              transform: profilesOpen ? "rotate(180deg)" : "rotate(0deg)",
+              marginTop: "3px",
+            }}>
+              ▾
+            </span>
+          </a>
+          <div style={{
+              ...styles.dropdown,
+              opacity: profilesOpen ? 1 : 0,
+              transform: profilesOpen
+                ? "translateX(-50%) translateY(0)"
+                : "translateX(-50%) translateY(-6px)",
+              pointerEvents: profilesOpen ? "auto" : "none",
+              transition: "opacity 0.25s ease, transform 0.25s ease",
+            }}>
+              {COUNTRY_LIST.map((c, i) => (
+                <div key={c.slug}>
+                  {i > 0 && <div style={styles.dropdownDivider} />}
+                  <a
+                    href={`/country-profiles/${c.slug}`}
+                    style={styles.dropdownItem}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    {c.name}
+                  </a>
+                </div>
+              ))}
+            </div>
+        </div>
+      )}
 
       {/* The map link is styled separately to keep the brand colour. */}
       {mobile ? (
@@ -177,7 +240,6 @@ const styles = {
     top: 0,
     zIndex: 1000,
     width: "100%",
-    overflowX: "hidden",
   },
   container: {
     maxWidth: "1280px",
@@ -317,5 +379,41 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-start",
+  },
+  dropdown: {
+    position: "absolute",
+    top: "100%",
+    left: "50%",
+    backgroundColor: "#FFFFFF",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    borderRadius: "2px",
+    minWidth: "150px",
+    zIndex: 2000,
+    paddingTop: "6px",
+    paddingBottom: "2px",
+    marginTop: "0px",
+  },
+  dropdownItem: {
+    display: "block",
+    padding: "5px 14px",
+    font: "normal normal normal 13px/18px Noto Sans",
+    color: "#000000",
+    textDecoration: "none",
+    backgroundColor: "transparent",
+    transition: "background-color 0.15s",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+  },
+  dropdownDivider: {
+    height: "1px",
+    backgroundColor: "#E5E7EB",
+    margin: "0 10px",
+  },
+  mobileDropdown: {
+    display: "flex",
+    flexDirection: "column",
+    paddingLeft: "16px",
+    paddingTop: "4px",
+    gap: "2px",
   },
 };

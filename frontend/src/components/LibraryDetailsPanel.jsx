@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import LibrarySectionCard from "./LibrarySectionCard";
 
+
 /* =====================
  * Shared InfoIconWithTooltip component
  * ===================== */
@@ -916,8 +917,8 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   }, [p]);
 
   const rowsBasic = [
-    { label: "Staff members", value: staffValue, infoText: "Number of full-time equivalent staff working at the library." },
-    { label: "Main target", value: mainTargetValue, infoText: "Primary audience groups that the library serves." },
+    { label: "Staff members", value: staffValue, infoText: "Average amount of personnel reported by the library." },
+    { label: "Main target audience", value: mainTargetValue, infoText: "Main target audience reported by the library." },
   ];
 
   /* =====================
@@ -980,10 +981,10 @@ export default function LibraryDetailsPanel({ library, mode = "library_status" }
   const usersValue = hasValue(USERS_KEY) ? String(p[USERS_KEY]) : "N/A";
 
   const rowsInternet = [
-    { label: "Availability", value: availabilityValue, infoText: "Hours per day that internet is available to users." },
-    { label: "Devices available", value: devicesAvailableValue, infoText: "Number of computers/devices with internet access for users." },
-    { label: "Devices used", value: devicesUsedValue, infoText: "Types of devices primarily used to access the internet." },
-    { label: "Users", value: usersValue, infoText: "Approximate daily users accessing library internet." },
+    { label: "Availability", value: availabilityValue, infoText: "Stability and permanence of connectivity as reported by library staff." },
+    { label: "Devices available", value: devicesAvailableValue, infoText: "Average amount of devices with Internet access in the library premises." },
+    { label: "Types of devices", value: devicesUsedValue, infoText: "Types of electronic devices available for users at the library." },
+    { label: "Users", value: usersValue, infoText: "Average amount of daily visitors." },
   ];
 
   /* =====================
